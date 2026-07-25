@@ -1,0 +1,350 @@
+{
+  "info": {
+    "name": "Lumina Finance - Advanced Search API",
+    "description": "Collection de tests pour la recherche intelligente avancée",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Recherche Simple",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"query\": \"martin\",\n  \"mode\": \"Fuzzy\",\n  \"categories\": [\"All\"],\n  \"page\": 1,\n  \"pageSize\": 10\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/advancedsearch/search",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "advancedsearch", "search"]
+        }
+      }
+    },
+    {
+      "name": "2. Recherche Clients avec Filtres",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"query\": \"paris\",\n  \"mode\": \"Fuzzy\",\n  \"categories\": [\"Clients\"],\n  \"clientFilters\": {\n    \"villes\": [\"Paris\", \"Lyon\"],\n    \"statuts\": [\"Actif\"],\n    \"revenuMin\": 2000,\n    \"revenuMax\": 5000,\n    \"ageMin\": 25,\n    \"ageMax\": 45\n  },\n  \"page\": 1,\n  \"pageSize\": 20,\n  \"sortBy\": \"Relevance\",\n  \"sortDirection\": \"Desc\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/advancedsearch/search",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "advancedsearch", "search"]
+        }
+      }
+    },
+    {
+      "name": "3. Recherche Documents",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"query\": \"contrat\",\n  \"mode\": \"Fuzzy\",\n  \"categories\": [\"Documents\"],\n  \"documentFilters\": {\n    \"typesDocument\": [\"Contrat\", \"Facture\"],\n    \"statutsValidation\": [\"Validé\"],\n    \"extensions\": [\".pdf\"]\n  }\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/advancedsearch/search",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "advancedsearch", "search"]
+        }
+      }
+    },
+    {
+      "name": "4. Recherche par Tags",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"categories\": [\"Clients\"],\n  \"tags\": [\"VIP\", \"Premium\"],\n  \"page\": 1,\n  \"pageSize\": 10\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/advancedsearch/search",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "advancedsearch", "search"]
+        }
+      }
+    },
+    {
+      "name": "5. Recherche Phonétique",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"query\": \"philippe\",\n  \"mode\": \"Phonetic\",\n  \"categories\": [\"Clients\"]\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/advancedsearch/search",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "advancedsearch", "search"]
+        }
+      }
+    },
+    {
+      "name": "6. Obtenir Suggestions",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/advancedsearch/suggestions?query=mar",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "advancedsearch", "suggestions"],
+          "query": [
+            {
+              "key": "query",
+              "value": "mar"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "7. Historique de Recherche",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/advancedsearch/history?limit=20",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "advancedsearch", "history"],
+          "query": [
+            {
+              "key": "limit",
+              "value": "20"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "8. Effacer Historique",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/advancedsearch/history",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "advancedsearch", "history"]
+        }
+      }
+    },
+    {
+      "name": "9. Ajouter Tag Client",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"tag\": \"VIP\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/advancedsearch/clients/1/tags",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "advancedsearch", "clients", "1", "tags"]
+        }
+      }
+    },
+    {
+      "name": "10. Obtenir Tags Client",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/advancedsearch/clients/1/tags",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "advancedsearch", "clients", "1", "tags"]
+        }
+      }
+    },
+    {
+      "name": "11. Supprimer Tag Client",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/advancedsearch/clients/tags/1",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "advancedsearch", "clients", "tags", "1"]
+        }
+      }
+    },
+    {
+      "name": "12. Ajouter Tag Document",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"tag\": \"Important\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/advancedsearch/documents/1/tags",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "advancedsearch", "documents", "1", "tags"]
+        }
+      }
+    },
+    {
+      "name": "13. Obtenir Tags Document",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/advancedsearch/documents/1/tags",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "advancedsearch", "documents", "1", "tags"]
+        }
+      }
+    },
+    {
+      "name": "14. Supprimer Tag Document",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/advancedsearch/documents/tags/1",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "advancedsearch", "documents", "tags", "1"]
+        }
+      }
+    },
+    {
+      "name": "15. Tags Populaires",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/advancedsearch/tags/popular?limit=20",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "advancedsearch", "tags", "popular"],
+          "query": [
+            {
+              "key": "limit",
+              "value": "20"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "your_jwt_token_here",
+      "type": "string"
+    }
+  ]
+}
