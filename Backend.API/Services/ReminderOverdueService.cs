@@ -54,7 +54,7 @@ namespace Backend.API.Services
                 var clientInfo = reminder.Client != null ? $" pour le client {reminder.Client.Prenom} {reminder.Client.Nom}" : "";
                 var priorityEmoji = reminder.Priority switch
                 {
-                    "Urgent" or "Critique" => "[URGENT] ",
+                    "Critique" => "[URGENT] ",
                     "Haute" => "[HAUTE] ",
                     _ => ""
                 };
@@ -65,7 +65,7 @@ namespace Backend.API.Services
                     UserId = targetUserId,
                     Titre = $"{priorityEmoji}Rappel en retard : {reminder.Title}",
                     Message = $"Le rappel \"{reminder.Title}\" était prévu le {reminder.DueDate:dd/MM/yyyy à HH:mm}{clientInfo}. Veuillez le traiter dès que possible.",
-                    Type = reminder.Priority == "Urgent" || reminder.Priority == "Critique" ? "Urgent" : "Alerte",
+                    Type = reminder.Priority == "Critique" ? "Urgent" : "Alerte",
                     Lien = "/agenda"
                 });
 
@@ -99,7 +99,7 @@ namespace Backend.API.Services
         {
             var priorityColor = priority switch
             {
-                "Urgent" or "Critique" => "#dc2626",
+                "Critique" => "#dc2626",
                 "Haute" => "#ea580c",
                 _ => "#d97706"
             };

@@ -1,3 +1,4 @@
+using Backend.BL.Exceptions;
 using Backend.BL.IBL;
 using Backend.DTO.Client;
 using Microsoft.AspNetCore.Authorization;
@@ -11,10 +12,14 @@ namespace Backend.API.Controllers
     public class DocumentsController : ControllerBase
     {
         private readonly IDocumentService _documentService;
+        private readonly IServiceScopeFactory _serviceScopeFactory;
+        private readonly ILogger<DocumentsController> _logger;
 
-        public DocumentsController(IDocumentService documentService)
+        public DocumentsController(IDocumentService documentService, IServiceScopeFactory serviceScopeFactory, ILogger<DocumentsController> logger)
         {
             _documentService = documentService;
+            _serviceScopeFactory = serviceScopeFactory;
+            _logger = logger;
         }
 
         [HttpGet]
@@ -68,6 +73,25 @@ namespace Backend.API.Controllers
                 await file.CopyToAsync(ms);
                 var statut = User.IsInRole("Admin") ? "Validé" : "En attente";
                 var doc = await _documentService.CreateAsync(idClient, typeDocument, file.FileName, ms.ToArray(), statut);
+
+                // Déclenchement asynchrone de la vérification OCR (fire-and-forget)
+                var documentId = doc.Id;
+                var logger = _logger;
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        using var scope = _serviceScopeFactory.CreateScope();
+                        var documentService = scope.ServiceProvider.GetRequiredService<IDocumentService>();
+                        await documentService.VerifierOcrAsync(documentId);
+                        logger.LogInformation("OCR déclenché automatiquement pour le document {Id}", documentId);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogWarning(ex, "Échec de la vérification OCR automatique pour le document {Id}", documentId);
+                    }
+                });
+
                 return CreatedAtAction(nameof(GetById), new { id = doc.Id }, doc);
             }
             catch (KeyNotFoundException ex)
@@ -125,6 +149,65 @@ namespace Backend.API.Controllers
             {
                 return NotFound(new { message = "Document introuvable." });
             }
+        }
+
+        /// Endpoint de vérification OCR déclenchée manuellement pour un document.
+        [HttpPost("{id}/ocr")]
+        [Authorize(Roles = "Admin,Superviseur")]
+        public async Task<IActionResult> VerifierOcr(int id)
+        {
+            try
+            {
+                var resultat = await _documentService.VerifierOcrAsync(id);
+                return Ok(resultat);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (OcrException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (FileNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+        }
+
+        /// Diagnostic : vérifie la disponibilité de Tesseract.
+        [HttpGet("ocr/diagnostic")]
+        [AllowAnonymous]
+        public IActionResult DiagnosticOcr()
+        {
+            var tessDataPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "tessdata");
+            var langFile = Path.Combine(tessDataPath, "fra.traineddata");
+            var ok = System.IO.File.Exists(langFile);
+            return Ok(new
+            {
+                TessDataPath = tessDataPath,
+                LangFileExiste = ok,
+                LangFile = langFile,
+                MoteurDisponible = ok
+            });
+        }
+
+        /// Récupère les résultats OCR d'un document.
+        [HttpGet("{id}/ocr")]
+        public async Task<IActionResult> GetResultatOcr(int id)
+        {
+            var doc = await _documentService.GetByIdAsync(id);
+            if (doc == null)
+                return NotFound(new { message = "Document introuvable." });
+
+            return Ok(new
+            {
+                doc.TexteExtrait,
+                doc.DonneesExtraites,
+                doc.ScoreConfiance,
+                doc.DateVerificationOCR,
+                doc.ResultatVerification
+            });
         }
     }
 }

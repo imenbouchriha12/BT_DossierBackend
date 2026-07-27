@@ -92,6 +92,7 @@ builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IClientPortalService, ClientPortalService>();
 builder.Services.AddScoped<IDocumentTemplateService, DocumentTemplateService>();
 builder.Services.AddScoped<IReminderService, ReminderService>();
+builder.Services.AddScoped<IOcrService, OcrService>();
 
 // ✅ Gestionnaire automatique du statut client
 builder.Services.AddScoped<ClientStatusManager>();
