@@ -3,11 +3,11 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Backend.DAL.Entities
 {
-    [Table("DetailClients", Schema = "dbo")]
+    [Table("DetailClient", Schema = "dbo")]
     public class DetailClient
     {
         [Key]
-        [Column("IdDetail")]
+        [Column("IdDetailClient")]
         public int Id { get; set; }
 
         [Column("IdClient")]

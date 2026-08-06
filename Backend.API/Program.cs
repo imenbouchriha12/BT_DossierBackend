@@ -74,6 +74,16 @@ builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 builder.Services.AddScoped<IClientPortalRepository, ClientPortalRepository>();
 builder.Services.AddScoped<IDocumentTemplateRepository, DocumentTemplateRepository>();
 builder.Services.AddScoped<IReminderRepository, ReminderRepository>();
+builder.Services.AddScoped<ICompteRepository, CompteRepository>();
+builder.Services.AddScoped<ICoursRepository, CoursRepository>();
+builder.Services.AddScoped<IMouvementRepository, MouvementRepository>();
+builder.Services.AddScoped<ISynchronisationRepository, SynchronisationRepository>();
+builder.Services.AddScoped<IWorkflowRepository, WorkflowRepository>();
+builder.Services.AddScoped<IActivityRepository, ActivityRepository>();
+builder.Services.AddScoped<IRegleAntifraudeRepository, RegleAntifraudeRepository>();
+builder.Services.AddScoped<IAlertesFraudeRepository, AlertesFraudeRepository>();
+builder.Services.AddScoped<IScoreRisqueRepository, ScoreRisqueRepository>();
+builder.Services.AddScoped<IMessageRepository, MessageRepository>();
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 
@@ -86,14 +96,31 @@ builder.Services.AddScoped<IClientService, ClientService>();
 builder.Services.AddScoped<IDocumentService, DocumentService>();
 builder.Services.AddScoped<IHistoriqueService, HistoriqueService>();
 builder.Services.AddScoped<IReportService, ReportService>();
+builder.Services.AddScoped<IReleveService, ReleveService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<IAdvancedSearchService, AdvancedSearchService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IClientPortalService, ClientPortalService>();
 builder.Services.AddScoped<IDocumentTemplateService, DocumentTemplateService>();
 builder.Services.AddScoped<IReminderService, ReminderService>();
-builder.Services.AddScoped<IOcrService, OcrService>();
-
+builder.Services.AddScoped<ICompteService, CompteService>();
+builder.Services.AddScoped<ICoursService, CoursService>();
+builder.Services.AddScoped<IMouvementService, MouvementService>();
+builder.Services.AddScoped<ISynchronisationService, SynchronisationService>();
+builder.Services.AddScoped<IWorkflowService, WorkflowService>();
+builder.Services.AddScoped<IActivityService, ActivityService>();
+// ✅ Cours de change en temps réel (source externe + repli SISS)
+builder.Services.AddScoped<ICoursTempsReelService, CoursTempsReelService>();
+builder.Services.AddHttpClient<CoursTempsReelService>();
+// ✅ Moteur de détection de fraude / anomalie
+builder.Services.AddScoped<IFraudDetectionService, FraudDetectionService>();
+// ✅ Score de risque client
+builder.Services.AddScoped<IRiskScoreService, RiskScoreService>();
+// ✅ Assistant IA (chat RAG + résumé de dossier) via un LLM compatible OpenAI
+builder.Services.AddScoped<IAiAssistantService, AiAssistantService>();
+builder.Services.AddScoped<ILlmApiService, LlmApiService>();
+builder.Services.AddScoped<IMessageService, MessageService>();
+builder.Services.AddHttpClient<LlmApiService>();
 // ✅ Gestionnaire automatique du statut client
 builder.Services.AddScoped<ClientStatusManager>();
 
@@ -102,6 +129,14 @@ builder.Services.AddSingleton<IPortalNotifier, PortalNotifier>();
 
 // ✅ Vérification automatique des rappels en retard (toutes les 5 minutes)
 builder.Services.AddHostedService<ReminderOverdueService>();
+
+// ✅ Synchronisation automatique application ↔ SISS (planifiée)
+builder.Services.AddHostedService<SissSynchronisationHostedService>();
+
+// Un service en arrière-plan qui échoue ne doit JAMAIS arrêter l'API :
+// on ignore son exception pour que le host continue de fonctionner.
+builder.Services.Configure<HostOptions>(options =>
+    options.BackgroundServiceExceptionBehavior = BackgroundServiceExceptionBehavior.Ignore);
 
 // Authentification JWT
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -176,5 +211,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
 app.MapHub<NotificationHub>("/hubs/notifications");
+app.MapHub<MessagesHub>("/hubs/messages");
 
 app.Run();

@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Backend.DAL.Entities
 {
-    [Table("DocumentClients", Schema = "dbo")]
+    [Table("DocumentClient", Schema = "dbo")]
     public class DocumentClient
     {
         [Key]
@@ -30,6 +30,11 @@ namespace Backend.DAL.Entities
 
         [Column("UploadedByUserId")]
         public int? UploadedByUserId { get; set; }
+
+        /// Origine du document : 'SISS' (importé) ou 'Application' (upload manuel)
+        [Column("Origine")]
+        [MaxLength(20)]
+        public string Origine { get; set; } = "Application";
 
         [ForeignKey("IdClient")]
         public Client Client { get; set; } = null!;

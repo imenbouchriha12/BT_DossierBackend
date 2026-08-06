@@ -17,7 +17,7 @@ namespace Backend.BL.BL
 
         public async Task SendActivationEmailAsync(string toEmail, string toName, string matricule, string password, string roleName)
         {
-            var subject = "Bienvenue sur Lumina Finance - Votre compte a été activé";
+            var subject = "Bienvenue sur BT DocCenter - Votre compte a été activé";
             var body = BuildActivationEmailBody(toName, matricule, password, roleName);
 
             var smtpHost = _configuration["Smtp:Host"];
@@ -33,7 +33,7 @@ namespace Backend.BL.BL
 
         public async Task SendResetPasswordEmailAsync(string toEmail, string toName, string resetLink)
         {
-            var subject = "Réinitialisation de votre mot de passe - Lumina Finance";
+            var subject = "Réinitialisation de votre mot de passe - BT DocCenter";
             var body = BuildResetPasswordEmailBody(toName, resetLink);
 
             var smtpHost = _configuration["Smtp:Host"];
@@ -90,7 +90,7 @@ namespace Backend.BL.BL
               Ce lien expire dans 1 heure. Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.
             </p>
             <p style='color: #94a3b8; font-size: 13px; line-height: 1.5; margin: 0; text-align: center;'>
-              &copy; 2024 Lumina Finance Solutions. Tous droits réservés.
+              &copy; 2024 BT DocCenter Solutions. Tous droits réservés.
             </p>
           </td>
         </tr>
@@ -124,7 +124,7 @@ namespace Backend.BL.BL
           <td style='padding: 40px 32px;'>
             <p style='color: #1e293b; font-size: 16px; line-height: 1.6; margin: 0 0 24px 0;'>Bonjour <strong>{toName}</strong>,</p>
             <p style='color: #475569; font-size: 15px; line-height: 1.6; margin: 0 0 24px 0;'>
-              Votre compte sur <strong>Lumina Finance</strong> a été activé par l'administrateur. Voici vos identifiants de connexion :
+              Votre compte sur <strong>BT DocCenter</strong> a été activé par l'administrateur. Voici vos identifiants de connexion :
             </p>
             <table width='100%' cellpadding='0' cellspacing='0' style='background-color: #f8fafc; border-radius: 12px; padding: 20px; margin-bottom: 24px;'>
               <tr>
@@ -156,7 +156,7 @@ namespace Backend.BL.BL
             </table>
             <p style='color: #94a3b8; font-size: 13px; line-height: 1.5; margin: 32px 0 0 0; text-align: center;'>
               Cet email a été généré automatiquement. Merci de ne pas y répondre.<br/>
-              &copy; 2024 Lumina Finance Solutions. Tous droits réservés.
+              &copy; 2024 BT DocCenter Solutions. Tous droits réservés.
             </p>
           </td>
         </tr>
@@ -173,7 +173,7 @@ namespace Backend.BL.BL
             {
                 using var message = new MimeKit.MimeMessage();
                 message.From.Add(new MimeKit.MailboxAddress(
-                    _configuration["Smtp:FromName"] ?? "Lumina Finance",
+                    _configuration["Smtp:FromName"] ?? "BT DocCenter",
                     _configuration["Smtp:FromEmail"] ?? "noreply@lumina-finance.com"));
                 message.To.Add(new MimeKit.MailboxAddress("", toEmail));
                 message.Subject = subject;

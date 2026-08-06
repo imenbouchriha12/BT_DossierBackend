@@ -32,5 +32,14 @@ namespace Backend.BL.BL
                 return claim?.Value ?? "Système";
             }
         }
+
+        public bool IsAdmin
+        {
+            get
+            {
+                var roles = _httpContextAccessor.HttpContext?.User?.FindAll(ClaimTypes.Role) ?? Enumerable.Empty<Claim>();
+                return roles.Any(r => r.Value.Equals("Admin", StringComparison.OrdinalIgnoreCase));
+            }
+        }
     }
 }

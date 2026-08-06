@@ -30,6 +30,15 @@ namespace Backend.DAL.DAL
                 .ToListAsync();
         }
 
+        public async Task<List<DocumentClient>> GetAllByClientIdsAsync(IEnumerable<int> idClients)
+        {
+            var ids = idClients.ToList();
+            return await _context.DocumentClients
+                .Where(d => ids.Contains(d.IdClient))
+                .AsNoTracking()
+                .ToListAsync();
+        }
+
         public async Task<List<DocumentClient>> GetAllAsync()
         {
             return await _context.DocumentClients

@@ -20,6 +20,8 @@ namespace Backend.DTO.Client
         public bool EstArchive { get; set; }
         public string? MotifBlocage { get; set; }
         public string TypeClient { get; set; } = "Particulier";
+        public string? MatriculeFiscal { get; set; }
+        public string? RegistreCommerce { get; set; }
         public DetailClientDto? Detail { get; set; }
     }
 
@@ -69,6 +71,8 @@ namespace Backend.DTO.Client
 
         public string Statut { get; set; } = "Actif";
         public string TypeClient { get; set; } = "Particulier";
+        public string? MatriculeFiscal { get; set; }
+        public string? RegistreCommerce { get; set; }
         public CreateDetailClientDto? Detail { get; set; }
     }
 
@@ -117,6 +121,8 @@ namespace Backend.DTO.Client
 
         public string Statut { get; set; } = string.Empty;
         public string TypeClient { get; set; } = "Particulier";
+        public string? MatriculeFiscal { get; set; }
+        public string? RegistreCommerce { get; set; }
         public UpdateDetailClientDto? Detail { get; set; }
     }
 
@@ -137,10 +143,31 @@ namespace Backend.DTO.Client
         public string? Prenom { get; set; }
         public string? Ville { get; set; }
         public string? Statut { get; set; }
+        public string? TypeClient { get; set; }
         public DateTime? DateDebut { get; set; }
         public DateTime? DateFin { get; set; }
         public int Page { get; set; } = 1;
         public int PageSize { get; set; } = 10;
+    }
+
+    /// <summary>
+    /// Types de clients gérés par l'application (détermine aussi les documents requis).
+    /// </summary>
+    public static class ClientTypes
+    {
+        public const string Particulier = "Particulier";
+        public const string Entreprise = "Entreprise";
+        public const string VIP = "VIP";
+        public const string Professionnel = "Professionnel";
+        public const string Association = "Association";
+
+        public static readonly string[] All =
+        {
+            Particulier, Entreprise, VIP, Professionnel, Association
+        };
+
+        public static bool IsValid(string? type)
+            => !string.IsNullOrWhiteSpace(type) && All.Contains(type.Trim());
     }
 
     public class PagedResult<T>
@@ -167,6 +194,7 @@ namespace Backend.DTO.Client
         public int DocumentsRejetes { get; set; }
         public List<VilleStat> RepartitionVille { get; set; } = new();
         public List<StatutStat> RepartitionStatut { get; set; } = new();
+        public List<TypeStat> RepartitionType { get; set; } = new();
         public List<CreationMois> CreationsParMois { get; set; } = new();
         public List<ClientRecentsItem> ClientsRecents { get; set; } = new();
         public List<DocumentRecentsItem> DocumentsRecents { get; set; } = new();
@@ -192,6 +220,12 @@ namespace Backend.DTO.Client
     public class StatutStat
     {
         public string Statut { get; set; } = string.Empty;
+        public int Count { get; set; }
+    }
+
+    public class TypeStat
+    {
+        public string Type { get; set; } = string.Empty;
         public int Count { get; set; }
     }
 

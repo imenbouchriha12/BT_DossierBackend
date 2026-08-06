@@ -7,7 +7,7 @@ namespace Backend.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize(Roles = "Admin,Superviseur")]
+    [Authorize]
     public class HistoriqueController : ControllerBase
     {
         private readonly IHistoriqueService _historiqueService;

@@ -18,8 +18,10 @@ namespace Backend.BL.BL
         private readonly INotificationService        _notificationService;
         private readonly IEmailService               _emailService;
         private readonly IPortalNotifier             _portalNotifier;
+        private readonly IWorkflowService            _workflowService;
         private readonly IConfiguration              _configuration;
         private readonly ILogger<ClientPortalService> _logger;
+        private readonly IActivityService            _activityService;
 
         public ClientPortalService(
             IClientPortalRepository     portalRepo,
@@ -30,8 +32,10 @@ namespace Backend.BL.BL
             INotificationService        notificationService,
             IEmailService               emailService,
             IPortalNotifier             portalNotifier,
+            IWorkflowService            workflowService,
             IConfiguration              configuration,
-            ILogger<ClientPortalService> logger)
+            ILogger<ClientPortalService> logger,
+            IActivityService            activityService)
         {
             _portalRepo          = portalRepo;
             _templateRepo        = templateRepo;
@@ -41,8 +45,10 @@ namespace Backend.BL.BL
             _notificationService = notificationService;
             _emailService        = emailService;
             _portalNotifier      = portalNotifier;
+            _workflowService     = workflowService;
             _configuration       = configuration;
             _logger              = logger;
+            _activityService     = activityService;
         }
 
         // ── Admin operations ──────────────────────────────────────────────────
@@ -84,7 +90,7 @@ namespace Backend.BL.BL
                 await _emailService.SendDirectEmailAsync(
                     client.Email,
                     $"{client.Prenom} {client.Nom}",
-                    "Lumina Finance – Déposez vos documents en ligne",
+                    "BT DocCenter – Déposez vos documents en ligne",
                     emailBody);
                 emailEnvoye = true;
             }
@@ -280,8 +286,23 @@ namespace Backend.BL.BL
             _logger.LogInformation("Document '{TypeDocument}' uploadé via portail pour {CodeClient}",
                 typeDocument, client.CodeClient);
 
+            // Workflow de validation multi-niveaux (uploadé par le client → 1ère étape Agent)
+            try
+            {
+                await _workflowService.CreateForDocumentAsync(document, null, null);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Erreur lors de la création du workflow (upload portail)");
+            }
+
             // Notifications in-app + SignalR (temps réel)
             await NotifyAdminsAsync(client, typeDocument);
+
+            await _activityService.EnregistrerEvenementAsync(
+                idClient, EvenementTypes.Document,
+                $"Document « {typeDocument} » soumis par le client via le portail.",
+                idLien: document.Id, typeLien: nameof(DocumentClient));
 
             return new PortalUploadResultDto
             {
@@ -431,7 +452,7 @@ namespace Backend.BL.BL
         <tr>
           <td style='background:linear-gradient(135deg,#1a237e,#4a148c);padding:40px 32px;text-align:center;'>
             <h1 style='color:#fff;font-size:22px;font-weight:600;margin:0;'>Déposez vos documents en ligne</h1>
-            <p style='color:rgba(255,255,255,.8);font-size:14px;margin:8px 0 0;'>Lumina Finance – Portail Client</p>
+            <p style='color:rgba(255,255,255,.8);font-size:14px;margin:8px 0 0;'>BT DocCenter – Portail Client</p>
           </td>
         </tr>
         <tr>
@@ -469,7 +490,7 @@ namespace Backend.BL.BL
             </table>
             <p style='color:#94a3b8;font-size:12px;text-align:center;margin:0;'>
               Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.<br/>
-              &copy; 2024 Lumina Finance Solutions. Tous droits réservés.
+              &copy; 2024 BT DocCenter Solutions. Tous droits réservés.
             </p>
           </td>
         </tr>

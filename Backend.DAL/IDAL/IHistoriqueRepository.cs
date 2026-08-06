@@ -8,7 +8,7 @@ namespace Backend.DAL.IDAL
         Task<HistoriqueModification?> GetByIdAsync(int id);
         Task<(List<HistoriqueModification> Items, int Total)> SearchAsync(
             string? tableModifiee, string? utilisateurNom, string? action,
-            DateTime? dateDebut, DateTime? dateFin, int page, int pageSize);
+            DateTime? dateDebut, DateTime? dateFin, int page, int pageSize, int? userId = null);
         Task SaveChangesAsync();
     }
 }

@@ -44,6 +44,25 @@ namespace Backend.API.Controllers
         }
 
         /// <summary>
+        /// Récupère les agrégats financiers du tableau de bord bancaire (Comptes, MVT, Cours)
+        /// </summary>
+        /// <returns>Agrégats financiers</returns>
+        [HttpGet("finance")]
+        public async Task<ActionResult<FinanceDashboardDto>> GetFinanceDashboard()
+        {
+            try
+            {
+                var data = await _dashboardService.GetFinanceDashboardAsync();
+                return Ok(data);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Erreur lors de la récupération du tableau de bord financier");
+                return StatusCode(500, new { message = "Erreur serveur" });
+            }
+        }
+
+        /// <summary>
         /// Récupère les KPIs principaux
         /// </summary>
         /// <returns>KPIs du tableau de bord</returns>

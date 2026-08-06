@@ -20,6 +20,18 @@ namespace Backend.DAL.DAL
             return await _context.Clients.FindAsync(id);
         }
 
+        public async Task<Client?> GetByCodeClientAsync(string codeClient)
+        {
+            return await _context.Clients.FirstOrDefaultAsync(c => c.CodeClient == codeClient);
+        }
+
+        public async Task<List<Client>> GetAllWithDetailAsync()
+        {
+            return await _context.Clients
+                .Include(c => c.Detail)
+                .ToListAsync();
+        }
+
         public async Task<Client?> GetByIdWithDetailAsync(int id)
         {
             return await _context.Clients
@@ -38,7 +50,7 @@ namespace Backend.DAL.DAL
 
         public async Task<(List<Client> Items, int Total)> SearchAsync(
             string? codeClient, string? nom, string? prenom,
-            string? ville, StatutClient? statut, DateTime? dateDebut, DateTime? dateFin,
+            string? ville, StatutClient? statut, string? typeClient, DateTime? dateDebut, DateTime? dateFin,
             int page, int pageSize)
         {
             var query = _context.Clients
@@ -56,6 +68,8 @@ namespace Backend.DAL.DAL
                 query = query.Where(c => c.Ville == ville);
             if (statut.HasValue)
                 query = query.Where(c => c.Statut == statut.Value);
+            if (!string.IsNullOrWhiteSpace(typeClient))
+                query = query.Where(c => c.TypeClient == typeClient.Trim());
             if (dateDebut.HasValue)
                 query = query.Where(c => c.DateCreation >= dateDebut.Value);
             if (dateFin.HasValue)
@@ -123,6 +137,16 @@ namespace Backend.DAL.DAL
             return await _context.Clients.CountAsync(c => c.Statut == statut && !c.EstArchive);
         }
 
+        public async Task<int> CountByTypeAndStatutAsync(string? typeClient, StatutClient? statut)
+        {
+            var query = _context.Clients.Where(c => !c.EstArchive).AsQueryable();
+            if (!string.IsNullOrWhiteSpace(typeClient))
+                query = query.Where(c => c.TypeClient == typeClient.Trim());
+            if (statut.HasValue)
+                query = query.Where(c => c.Statut == statut.Value);
+            return await query.CountAsync();
+        }
+
         public async Task<int> CountByDateRangeAsync(DateTime debut, DateTime fin)
         {
             return await _context.Clients.CountAsync(c => c.DateCreation >= debut && c.DateCreation <= fin && !c.EstArchive);
@@ -151,6 +175,14 @@ namespace Backend.DAL.DAL
             return await _context.Clients
                 .Where(c => !c.EstArchive)
                 .GroupBy(c => c.Statut)
+                .ToListAsync();
+        }
+
+        public async Task<List<IGrouping<string, Client>>> GroupByTypeAsync()
+        {
+            return await _context.Clients
+                .Where(c => !c.EstArchive)
+                .GroupBy(c => c.TypeClient)
                 .ToListAsync();
         }
 

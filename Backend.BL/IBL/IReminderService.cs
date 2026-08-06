@@ -12,5 +12,12 @@ namespace Backend.BL.IBL
         Task<ReminderDto?> UpdateAsync(int id, UpdateReminderDto dto);
         Task<bool> DeleteAsync(int id);
         Task<bool> CompleteAsync(int id);
+        Task<bool> CompleteAsync(int id, int completedByUserId);
+        Task<bool> SignAsync(int id, int userId);
+        Task<bool> UpdateStatusAsync(int id, string status, int userId);
+        Task<ReminderDto> CreateDocumentReminderAsync(int userId, int clientId, string title);
+        Task<List<ReminderDto>> GetTeamFilteredAsync(ReminderFilterDto filter);
+        Task<ReminderStatsDto> GetTeamStatsAsync();
+        Task<List<ReminderDto>> GetAssignedToMeAsync(int userId, ReminderFilterDto filter);
     }
 }

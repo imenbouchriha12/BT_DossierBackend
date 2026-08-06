@@ -1,4 +1,3 @@
-using Backend.BL.Exceptions;
 using Backend.BL.IBL;
 using Backend.DTO.Client;
 using Microsoft.AspNetCore.Authorization;
@@ -12,13 +11,13 @@ namespace Backend.API.Controllers
     public class DocumentsController : ControllerBase
     {
         private readonly IDocumentService _documentService;
-        private readonly IServiceScopeFactory _serviceScopeFactory;
+        private readonly IWorkflowService _workflowService;
         private readonly ILogger<DocumentsController> _logger;
 
-        public DocumentsController(IDocumentService documentService, IServiceScopeFactory serviceScopeFactory, ILogger<DocumentsController> logger)
+        public DocumentsController(IDocumentService documentService, IWorkflowService workflowService, ILogger<DocumentsController> logger)
         {
             _documentService = documentService;
-            _serviceScopeFactory = serviceScopeFactory;
+            _workflowService = workflowService;
             _logger = logger;
         }
 
@@ -74,24 +73,6 @@ namespace Backend.API.Controllers
                 var statut = User.IsInRole("Admin") ? "Validé" : "En attente";
                 var doc = await _documentService.CreateAsync(idClient, typeDocument, file.FileName, ms.ToArray(), statut);
 
-                // Déclenchement asynchrone de la vérification OCR (fire-and-forget)
-                var documentId = doc.Id;
-                var logger = _logger;
-                _ = Task.Run(async () =>
-                {
-                    try
-                    {
-                        using var scope = _serviceScopeFactory.CreateScope();
-                        var documentService = scope.ServiceProvider.GetRequiredService<IDocumentService>();
-                        await documentService.VerifierOcrAsync(documentId);
-                        logger.LogInformation("OCR déclenché automatiquement pour le document {Id}", documentId);
-                    }
-                    catch (Exception ex)
-                    {
-                        logger.LogWarning(ex, "Échec de la vérification OCR automatique pour le document {Id}", documentId);
-                    }
-                });
-
                 return CreatedAtAction(nameof(GetById), new { id = doc.Id }, doc);
             }
             catch (KeyNotFoundException ex)
@@ -137,77 +118,35 @@ namespace Backend.API.Controllers
         [Authorize(Roles = "Admin,Superviseur")]
         public async Task<IActionResult> UpdateValidation(int id, [FromBody] UpdateDocumentValidationDto dto)
         {
-            if (dto.StatutValidation != "Validé" && dto.StatutValidation != "En attente" && dto.StatutValidation != "Rejeté")
-                return BadRequest(new { message = "Statut invalide. Utilisez : Validé, En attente, Rejeté" });
+            if (dto.StatutValidation != "Validé" && dto.StatutValidation != "Rejeté")
+                return BadRequest(new { message = "Statut invalide. Utilisez : Validé ou Rejeté" });
 
             try
             {
-                var doc = await _documentService.UpdateValidationAsync(id, dto.StatutValidation);
+                var workflow = await _workflowService.GetByDocumentIdAsync(id);
+                if (workflow == null)
+                    return BadRequest(new { message = "Aucun workflow de validation pour ce document." });
+
+                if (dto.StatutValidation == "Validé")
+                    await _workflowService.ValiderAsync(workflow.Id, null);
+                else
+                    await _workflowService.RejeterAsync(workflow.Id, "Document rejeté.");
+
+                var doc = await _documentService.GetByIdAsync(id);
                 return Ok(doc);
             }
             catch (KeyNotFoundException)
             {
                 return NotFound(new { message = "Document introuvable." });
             }
-        }
-
-        /// Endpoint de vérification OCR déclenchée manuellement pour un document.
-        [HttpPost("{id}/ocr")]
-        [Authorize(Roles = "Admin,Superviseur")]
-        public async Task<IActionResult> VerifierOcr(int id)
-        {
-            try
+            catch (UnauthorizedAccessException)
             {
-                var resultat = await _documentService.VerifierOcrAsync(id);
-                return Ok(resultat);
+                return Forbid();
             }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(new { message = ex.Message });
-            }
-            catch (OcrException ex)
+            catch (InvalidOperationException ex)
             {
                 return BadRequest(new { message = ex.Message });
             }
-            catch (FileNotFoundException ex)
-            {
-                return NotFound(new { message = ex.Message });
-            }
-        }
-
-        /// Diagnostic : vérifie la disponibilité de Tesseract.
-        [HttpGet("ocr/diagnostic")]
-        [AllowAnonymous]
-        public IActionResult DiagnosticOcr()
-        {
-            var tessDataPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "tessdata");
-            var langFile = Path.Combine(tessDataPath, "fra.traineddata");
-            var ok = System.IO.File.Exists(langFile);
-            return Ok(new
-            {
-                TessDataPath = tessDataPath,
-                LangFileExiste = ok,
-                LangFile = langFile,
-                MoteurDisponible = ok
-            });
-        }
-
-        /// Récupère les résultats OCR d'un document.
-        [HttpGet("{id}/ocr")]
-        public async Task<IActionResult> GetResultatOcr(int id)
-        {
-            var doc = await _documentService.GetByIdAsync(id);
-            if (doc == null)
-                return NotFound(new { message = "Document introuvable." });
-
-            return Ok(new
-            {
-                doc.TexteExtrait,
-                doc.DonneesExtraites,
-                doc.ScoreConfiance,
-                doc.DateVerificationOCR,
-                doc.ResultatVerification
-            });
         }
     }
 }

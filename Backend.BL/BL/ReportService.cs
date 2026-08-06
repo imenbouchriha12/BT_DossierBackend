@@ -30,7 +30,7 @@ namespace Backend.BL.BL
 
             var (clients, _) = await _clientRepository.SearchAsync(
                 null, null, null,
-                request.Ville, statutEnum, request.DateDebut, request.DateFin,
+                request.Ville, statutEnum, null, request.DateDebut, request.DateFin,
                 1, int.MaxValue);
 
             var total = clients.Count;
@@ -52,7 +52,7 @@ namespace Backend.BL.BL
                         {
                             row.RelativeItem().Column(c =>
                             {
-                                c.Item().Text("Lumina Finance").FontSize(18).Bold().FontColor(Colors.Blue.Darken4);
+                                c.Item().Text("BT DocCenter").FontSize(18).Bold().FontColor(Colors.Blue.Darken4);
                                 c.Item().Text("Rapport - Liste des Clients").FontSize(12).FontColor(Colors.Grey.Darken2);
                             });
                             row.ConstantItem(150).AlignRight().Column(c =>
@@ -128,7 +128,7 @@ namespace Backend.BL.BL
 
                     page.Footer().AlignCenter().Text(t =>
                     {
-                        t.Span("Lumina Finance - Rapport généré le ").FontSize(8).FontColor(Colors.Grey.Darken2);
+                        t.Span("BT DocCenter - Rapport généré le ").FontSize(8).FontColor(Colors.Grey.Darken2);
                         t.Span(DateTime.Now.ToString("dd/MM/yyyy HH:mm")).FontSize(8).Bold().FontColor(Colors.Grey.Darken2);
                         t.Span(" | Page ").FontSize(8).FontColor(Colors.Grey.Darken2);
                         t.CurrentPageNumber().FontSize(8).FontColor(Colors.Grey.Darken2);
@@ -160,7 +160,7 @@ namespace Backend.BL.BL
 
                     page.Header().Column(col =>
                     {
-                        col.Item().Text("Lumina Finance").FontSize(20).Bold().FontColor(Colors.Blue.Darken4);
+                        col.Item().Text("BT DocCenter").FontSize(20).Bold().FontColor(Colors.Blue.Darken4);
                         col.Item().Text("Rapport Statistiques Clients").FontSize(14).FontColor(Colors.Grey.Darken2);
                         col.Item().Text($"Généré le {DateTime.Now:dd/MM/yyyy HH:mm}").FontSize(9).FontColor(Colors.Grey.Darken1);
                         col.Item().PaddingVertical(8).LineHorizontal(1).LineColor(Colors.Grey.Lighten2);
@@ -247,7 +247,7 @@ namespace Backend.BL.BL
 
                     page.Footer().AlignCenter().Text(t =>
                     {
-                        t.Span("Lumina Finance | Page ").FontSize(8).FontColor(Colors.Grey.Darken2);
+                        t.Span("BT DocCenter | Page ").FontSize(8).FontColor(Colors.Grey.Darken2);
                         t.CurrentPageNumber().FontSize(8).FontColor(Colors.Grey.Darken2);
                     });
                 });
@@ -266,7 +266,7 @@ namespace Backend.BL.BL
 
             var (clients, _) = await _clientRepository.SearchAsync(
                 null, null, null,
-                request.Ville, statutEnum, request.DateDebut, request.DateFin,
+                request.Ville, statutEnum, null, request.DateDebut, request.DateFin,
                 1, int.MaxValue);
 
             var stream = new MemoryStream();

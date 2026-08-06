@@ -119,5 +119,16 @@ namespace Backend.API.Controllers
             var villes = await _clientService.GetAllVillesAsync();
             return Ok(villes);
         }
+
+        [HttpGet("import-template")]
+        [Authorize(Roles = "Admin,Agent,Superviseur")]
+        public async Task<IActionResult> GetImportTemplate()
+        {
+            var fileBytes = await _clientService.GenerateImportTemplateAsync();
+            return File(
+                fileBytes,
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                $"modele_import_clients.xlsx");
+        }
     }
 }

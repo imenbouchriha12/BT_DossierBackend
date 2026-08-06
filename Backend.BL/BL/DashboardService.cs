@@ -5,6 +5,7 @@ using Backend.DAL.Entities;
 using Backend.DTO.Dashboard;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using System.Globalization;
 
 namespace Backend.BL.BL
 {
@@ -17,17 +18,20 @@ namespace Backend.BL.BL
         private readonly ICurrentUserService _currentUserService;
         private readonly ILogger<DashboardService> _logger;
         private readonly IMapper _mapper;
+        private readonly ICoursTempsReelService _coursTempsReelService;
 
         public DashboardService(
             AppDbContext context,
             ICurrentUserService currentUserService,
             ILogger<DashboardService> logger,
-            IMapper mapper)
+            IMapper mapper,
+            ICoursTempsReelService coursTempsReelService)
         {
             _context = context;
             _currentUserService = currentUserService;
             _logger = logger;
             _mapper = mapper;
+            _coursTempsReelService = coursTempsReelService;
         }
 
         public async Task<DashboardStatsDto> GetDashboardStatsAsync()
@@ -39,6 +43,7 @@ namespace Backend.BL.BL
                     Kpis = await GetKpisAsync(),
                     ClientEvolution = await GetClientEvolutionAsync(6),
                     GeographicDistribution = await GetGeographicDistributionAsync(10),
+                    TypeDistribution = await GetTypeDistributionAsync(),
                     TopRevenueClients = await GetTopRevenueClientsAsync(10),
                     DocumentsPending = await GetPendingDocumentsAsync(),
                     AgentPerformance = await GetAgentPerformanceAsync(),
@@ -52,6 +57,163 @@ namespace Backend.BL.BL
                 _logger.LogError(ex, "Erreur lors de la récupération des statistiques du tableau de bord");
                 throw;
             }
+        }
+
+        public async Task<FinanceDashboardDto> GetFinanceDashboardAsync()
+        {
+            var comptes = await _context.Comptes.ToListAsync();
+            var mouvements = await _context.Mouvements.ToListAsync();
+            var cours = await _context.Cours.ToListAsync();
+            var clients = await _context.Clients
+                .Select(c => new { c.Id, c.CodeClient, c.Nom, c.Prenom })
+                .ToListAsync();
+
+            var clientsParId = clients.ToDictionary(c => c.Id);
+
+            // Dernier cours valide par devise (conversion des montants en TND)
+            var dernierCours = cours
+                .Where(c => !string.IsNullOrWhiteSpace(c.Devise) && c.Devise.Trim() != "ZZ")
+                .GroupBy(c => c.Devise.Trim())
+                .Select(g => new { Devise = g.Key, Dernier = g.OrderByDescending(c => c.Journee).First() })
+                .ToDictionary(g => g.Devise, g => g.Dernier);
+
+            decimal ToTnd(string devise, decimal montant)
+            {
+                if (string.IsNullOrWhiteSpace(devise) || devise.Trim() == "TND")
+                    return montant;
+                if (dernierCours.TryGetValue(devise.Trim(), out var c))
+                {
+                    // Convention SISS : contre-valeur = montant × Valeur ÷ Multiplicateur
+                    var multiplicateur = c.Multiplicateur > 0 ? c.Multiplicateur : 1;
+                    return montant * c.Valeur / multiplicateur;
+                }
+                return montant;
+            }
+
+            var totalActifs = comptes.Sum(c => c.SoldeContreValeur);
+
+            var kpis = new FinanceKpisDto
+            {
+                TotalActifsTND = totalActifs,
+                NbComptes = comptes.Count,
+                NbClientsDetenteurs = comptes.Select(c => c.IdClient).Distinct().Count(),
+                NbComptesDecouverts = comptes.Count(c => c.Solde < 0),
+                NbMouvements = mouvements.Count,
+                VolumeCreditsTND = mouvements.Where(m => m.Sens == "C").Sum(m => ToTnd(m.DevMVT, m.Montant)),
+                VolumeDebitsTND = mouvements.Where(m => m.Sens == "D").Sum(m => ToTnd(m.DevMVT, m.Montant)),
+                PeriodeReference = mouvements.Any() ? mouvements.Max(m => m.DateMvt) : (DateTime?)null
+            };
+            kpis.TauxDecouvert = kpis.NbComptes > 0 ? Math.Round((double)kpis.NbComptesDecouverts / kpis.NbComptes * 100, 2) : 0;
+            kpis.FluxNet = kpis.VolumeCreditsTND - kpis.VolumeDebitsTND;
+
+            // Répartition des actifs par devise
+            var repartition = comptes
+                .GroupBy(c => c.Devise.Trim())
+                .Select(g => new RepartitionDeviseDto
+                {
+                    Devise = g.Key,
+                    NombreComptes = g.Count(),
+                    SoldeContreValeur = g.Sum(c => c.SoldeContreValeur),
+                    Part = totalActifs != 0 ? Math.Round((double)(g.Sum(c => c.SoldeContreValeur) / totalActifs) * 100, 2) : 0
+                })
+                .OrderByDescending(g => g.SoldeContreValeur)
+                .ToList();
+
+            // État des comptes
+            var etats = new List<EtatCompteDto>();
+            var groupeCrediteur = comptes.Where(c => c.Solde > 0).ToList();
+            var groupeSolde = comptes.Where(c => c.Solde == 0).ToList();
+            var groupeDecouvert = comptes.Where(c => c.Solde < 0).ToList();
+            etats.Add(new EtatCompteDto { Etat = "Créditeur", Nombre = groupeCrediteur.Count, SoldeContreValeur = groupeCrediteur.Sum(c => c.SoldeContreValeur) });
+            etats.Add(new EtatCompteDto { Etat = "Soldé", Nombre = groupeSolde.Count, SoldeContreValeur = groupeSolde.Sum(c => c.SoldeContreValeur) });
+            etats.Add(new EtatCompteDto { Etat = "Découvert", Nombre = groupeDecouvert.Count, SoldeContreValeur = groupeDecouvert.Sum(c => c.SoldeContreValeur) });
+
+            // Évolution mensuelle des flux
+            var evolution = mouvements
+                .GroupBy(m => new { m.DateMvt.Year, m.DateMvt.Month })
+                .OrderBy(g => g.Key.Year).ThenBy(g => g.Key.Month)
+                .Select(g => new EvolutionMouvementDto
+                {
+                    Mois = new DateTime(g.Key.Year, g.Key.Month, 1).ToString("MMM yyyy", CultureInfo.GetCultureInfo("fr-FR")),
+                    Credits = g.Where(m => m.Sens == "C").Sum(m => ToTnd(m.DevMVT, m.Montant)),
+                    Debits = g.Where(m => m.Sens == "D").Sum(m => ToTnd(m.DevMVT, m.Montant))
+                })
+                .ToList();
+            foreach (var e in evolution)
+                e.FluxNet = e.Credits - e.Debits;
+
+            // Top des agences
+            var topAgences = comptes
+                .GroupBy(c => c.Agence.Trim())
+                .Select(g => new TopAgenceDto
+                {
+                    Agence = g.Key,
+                    NombreComptes = g.Count(),
+                    SoldeContreValeur = g.Sum(c => c.SoldeContreValeur),
+                    NbMouvements = mouvements.Count(m => m.Agence == g.Key)
+                })
+                .OrderByDescending(a => a.SoldeContreValeur)
+                .ToList();
+
+            // Derniers mouvements (avec client)
+            var compteParCle = comptes.ToDictionary(c => (c.NumCompte, c.Agence));
+            var derniersMouvements = mouvements
+                .OrderByDescending(m => m.DateMvt)
+                .ThenByDescending(m => m.Id)
+                .Take(10)
+                .Select(m =>
+                {
+                    var compte = compteParCle.GetValueOrDefault((m.NumCompte, m.Agence));
+                    var client = compte != null && clientsParId.TryGetValue(compte.IdClient, out var cl) ? cl : null;
+                    return new MouvementRecenteDto
+                    {
+                        Id = m.Id,
+                        NumCompte = m.NumCompte,
+                        Agence = m.Agence,
+                        DateMvt = m.DateMvt,
+                        Montant = m.Montant,
+                        DevMVT = m.DevMVT,
+                        Sens = m.Sens,
+                        MontantTND = Math.Round(ToTnd(m.DevMVT, m.Montant), 3),
+                        CodeClient = client?.CodeClient,
+                        NomClient = client != null ? $"{client.Nom} {client.Prenom}".Trim() : null
+                    };
+                })
+                .ToList();
+
+            // Comptes en découvert (avec client)
+            var comptesDecouverts = groupeDecouvert
+                .Select(c =>
+                {
+                    var client = clientsParId.TryGetValue(c.IdClient, out var cl) ? cl : null;
+                    return new CompteDecouvertDto
+                    {
+                        NumCompte = c.NumCompte,
+                        Agence = c.Agence,
+                        Devise = c.Devise.Trim(),
+                        Solde = c.Solde,
+                        SoldeContreValeur = c.SoldeContreValeur,
+                        CodeClient = client?.CodeClient,
+                        NomClient = client != null ? $"{client.Nom} {client.Prenom}".Trim() : null
+                    };
+                })
+                .OrderBy(c => c.Solde)
+                .ToList();
+
+            // Cours de change du jour (temps réel, repli SISS)
+            var coursJour = await _coursTempsReelService.GetCoursDuJourAsync();
+
+            return new FinanceDashboardDto
+            {
+                Kpis = kpis,
+                RepartitionParDevise = repartition,
+                EtatsComptes = etats,
+                EvolutionMouvements = evolution,
+                TopAgences = topAgences,
+                DerniersMouvements = derniersMouvements,
+                ComptesDecouverts = comptesDecouverts,
+                CoursJour = coursJour
+            };
         }
 
         public async Task<KpiSummaryDto> GetKpisAsync()
@@ -129,7 +291,7 @@ namespace Backend.BL.BL
             for (int i = months - 1; i >= 0; i--)
             {
                 var monthDate = now.AddMonths(-i);
-                evolution.Labels.Add(monthDate.ToString("MMM yyyy"));
+                evolution.Labels.Add(monthDate.ToString("MMM yyyy", CultureInfo.GetCultureInfo("fr-FR")));
             }
 
             // Calculer les statistiques pour chaque mois
@@ -159,10 +321,10 @@ namespace Backend.BL.BL
             var totalClients = clients.Count;
 
             var distribution = clients
-                .GroupBy(c => c.Ville)
+                .GroupBy(c => c.Ville!.Trim())
                 .Select(g => new GeographicDistributionDto
                 {
-                    City = g.Key!,
+                    City = g.Key,
                     ClientCount = g.Count(),
                     Percentage = totalClients > 0 ? Math.Round((double)g.Count() / totalClients * 100, 2) : 0,
                     TotalRevenue = g
@@ -174,6 +336,36 @@ namespace Backend.BL.BL
                 .ToList();
 
             return distribution;
+        }
+
+        public async Task<List<ClientTypeDistributionDto>> GetTypeDistributionAsync()
+        {
+            var clients = await _context.Clients
+                .Where(c => !c.EstArchive)
+                .Select(c => c.TypeClient)
+                .ToListAsync();
+
+            var total = clients.Count;
+
+            var distribution = clients
+                .GroupBy(t => t)
+                .Select(g => new ClientTypeDistributionDto
+                {
+                    Type = g.Key,
+                    Count = g.Count(),
+                    Percentage = total > 0 ? Math.Round((double)g.Count() / total * 100, 2) : 0
+                })
+                .OrderByDescending(d => d.Count)
+                .ToList();
+
+            // Garantir qu'un type sans client apparaît avec un compte à 0
+            foreach (var type in Backend.DTO.Client.ClientTypes.All)
+            {
+                if (!distribution.Any(d => d.Type == type))
+                    distribution.Add(new ClientTypeDistributionDto { Type = type, Count = 0, Percentage = 0 });
+            }
+
+            return distribution.OrderByDescending(d => d.Count).ToList();
         }
 
         public async Task<List<TopRevenueClientDto>> GetTopRevenueClientsAsync(int topN = 10)
@@ -260,39 +452,36 @@ namespace Backend.BL.BL
 
             foreach (var agent in agents)
             {
-                // Clients créés par cet agent
-                var clientsCreated = await _context.HistoriqueModifications
-                    .Where(h => h.UtilisateurId == agent.Id && 
-                                h.Action.Contains("Création") && 
-                                h.DateHeure >= firstDayOfMonth)
-                    .CountAsync();
-
-                var totalClients = await _context.HistoriqueModifications
-                    .Where(h => h.UtilisateurId == agent.Id && h.Action.Contains("Création"))
-                    .CountAsync();
-
-                var docsProcessed = await _context.HistoriqueModifications
-                    .Where(h => h.UtilisateurId == agent.Id && 
-                                h.DateHeure >= firstDayOfMonth &&
-                                h.TableModifiee == "DocumentClients")
-                    .CountAsync();
-
-                var modificationsCount = await _context.HistoriqueModifications
+                // Toute l'activité de l'agent, récupérée en une seule requête
+                var activites = await _context.HistoriqueModifications
                     .Where(h => h.UtilisateurId == agent.Id)
-                    .CountAsync();
+                    .ToListAsync();
 
-                // Score de performance simple (peut être amélioré)
-                var score = CalculatePerformanceScore(clientsCreated, docsProcessed, modificationsCount);
+                var clientsCreatedThisMonth = activites.Count(h =>
+                    h.Action.Contains("Création") && h.DateHeure >= firstDayOfMonth);
+                var totalClientsManaged = activites.Count(h => h.Action.Contains("Création"));
+
+                var docsProcessedThisMonth = activites.Count(h =>
+                    h.TableModifiee.Contains("Document") && h.DateHeure >= firstDayOfMonth);
+                var docsProcessedTotal = activites.Count(h => h.TableModifiee.Contains("Document"));
+
+                var modificationsCount = activites.Count;
+                var lastActivity = activites.Count > 0 ? (DateTime?)activites.Max(h => h.DateHeure) : null;
+
+                // Score : pondère les clients créés ce mois, les documents traités et l'ancienneté d'activité
+                var score = CalculatePerformanceScore(clientsCreatedThisMonth, docsProcessedThisMonth, modificationsCount, lastActivity, now);
 
                 performance.Add(new AgentPerformanceDto
                 {
                     UserId = agent.Id,
                     Username = agent.Username,
                     Matricule = agent.Matricule,
-                    ClientsCreatedThisMonth = clientsCreated,
-                    TotalClientsManaged = totalClients,
-                    DocumentsProcessedThisMonth = docsProcessed,
+                    ClientsCreatedThisMonth = clientsCreatedThisMonth,
+                    TotalClientsManaged = totalClientsManaged,
+                    DocumentsProcessedThisMonth = docsProcessedThisMonth,
+                    DocumentsProcessedTotal = docsProcessedTotal,
                     ModificationsCount = modificationsCount,
+                    LastActivity = lastActivity,
                     PerformanceScore = score
                 });
             }
@@ -380,11 +569,20 @@ namespace Backend.BL.BL
             return null;
         }
 
-        private double CalculatePerformanceScore(int clientsCreated, int docsProcessed, int modifications)
+        private double CalculatePerformanceScore(int clientsCreated, int docsProcessed, int modifications, DateTime? lastActivity, DateTime now)
         {
-            // Score simple basé sur l'activité (peut être amélioré)
-            var score = (clientsCreated * 10) + (docsProcessed * 5) + (modifications * 2);
-            return Math.Min(Math.Round((double)score, 2), 100);
+            // Composante "activité récente" : 40 pts max si activité dans les 7 derniers jours
+            double recencyScore = 0;
+            if (lastActivity.HasValue)
+            {
+                var jours = (now - lastActivity.Value).TotalDays;
+                recencyScore = Math.Max(0, 40 - (jours / 7) * 10);
+            }
+
+            // Composante "volume" : 60 pts max (clients × 12 + documents × 8 + modifications × 2)
+            var volumeScore = Math.Min(60, (clientsCreated * 12) + (docsProcessed * 8) + (modifications * 2));
+
+            return Math.Round(Math.Min(recencyScore + volumeScore, 100), 1);
         }
     }
 }

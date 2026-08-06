@@ -5,27 +5,27 @@ namespace Backend.DAL.Entities
 {
     public enum ReminderType
     {
-        DocumentRenewal,
-        FollowUpCall,
-        Appointment,
-        Task,
-        Custom
+        RenouvellementDocument,
+        AppelSuivi,
+        RendezVous,
+        Tache,
+        Autre
     }
 
     public enum ReminderPriority
     {
-        Low,
-        Medium,
-        High,
-        Urgent
+        Basse,
+        Normale,
+        Haute,
+        Critique
     }
 
     public enum ReminderStatus
     {
-        Pending,
-        InProgress,
-        Completed,
-        Cancelled
+        EnAttente,
+        EnCours,
+        Termine,
+        Annule
     }
 
     [Table("Reminders", Schema = "dbo")]
@@ -44,15 +44,15 @@ namespace Backend.DAL.Entities
 
         [Column("Type")]
         [MaxLength(30)]
-        public string Type { get; set; } = "Custom";
+        public string Type { get; set; } = "Autre";
 
         [Column("Priority")]
         [MaxLength(20)]
-        public string Priority { get; set; } = "Medium";
+        public string Priority { get; set; } = "Normale";
 
         [Column("Status")]
         [MaxLength(20)]
-        public string Status { get; set; } = "Pending";
+        public string Status { get; set; } = "EnAttente";
 
         [Column("DueDate")]
         public DateTime DueDate { get; set; }

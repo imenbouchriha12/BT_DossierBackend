@@ -69,6 +69,16 @@ namespace Backend.DAL.DAL
                 .ToListAsync();
         }
 
+        /// Retourne tous les utilisateurs actifs ayant un rôle donné (ex: "Agent", "Superviseur")
+        public async Task<List<User>> GetByRoleAsync(string role)
+        {
+            return await _context.Users
+                .Include(u => u.UserRoles)
+                .ThenInclude(ur => ur.Role)
+                .Where(u => u.IsActive && u.UserRoles.Any(ur => ur.Role.Name == role))
+                .ToListAsync();
+        }
+
         /// Vérifie si un email existe déjà
         public async Task<bool> EmailExistsAsync(string email)
         {

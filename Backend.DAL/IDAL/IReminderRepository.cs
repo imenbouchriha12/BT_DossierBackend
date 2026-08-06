@@ -6,6 +6,10 @@ namespace Backend.DAL.IDAL
     {
         Task<List<Reminder>> GetAllAsync(int userId, int page = 1, int pageSize = 50);
         Task<List<Reminder>> GetByFilterAsync(int userId, string? type, string? priority, string? status, int? clientId, int? assignedToUserId, DateTime? dateFrom, DateTime? dateTo);
+        Task<List<Reminder>> GetAllTeamAsync(string? type, string? priority, string? status, int? clientId, int? assignedToUserId, DateTime? dateFrom, DateTime? dateTo);
+        Task<int> GetAllTeamCountAsync(string? status);
+        Task<int> GetAllTeamOverdueCountAsync();
+        Task<int> GetAllTeamUrgentPendingCountAsync();
         Task<Reminder?> GetByIdAsync(int id);
         Task<int> GetCountAsync(int userId);
         Task<int> GetCountByStatusAsync(int userId, string status);

@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Backend.DAL.Entities
 {
-    [Table("Clients", Schema = "dbo")]
+    [Table("Client", Schema = "dbo")]
     public class Client
     {
         [Key]
@@ -53,10 +53,33 @@ namespace Backend.DAL.Entities
         [MaxLength(500)]
         public string? MotifBlocage { get; set; }
 
-        /// Type de client : détermine les documents requis (ex: Particulier, Entreprise, VIP)
+        /// Type de client : détermine les documents requis (ex: Particulier, Entreprise, VIP, Professionnel, Association)
         [Column("TypeClient")]
         [MaxLength(50)]
         public string TypeClient { get; set; } = "Particulier";
+
+        /// Matricule fiscal (Entreprise / Association / Professionnel)
+        [Column("MatriculeFiscal")]
+        [MaxLength(50)]
+        public string? MatriculeFiscal { get; set; }
+
+        /// Registre de commerce (Entreprise / Association)
+        [Column("RegistreCommerce")]
+        [MaxLength(50)]
+        public string? RegistreCommerce { get; set; }
+
+        /// Client issu du référentiel SISS (importé par la synchronisation)
+        [Column("EstImporteSISS")]
+        public bool EstImporteSISS { get; set; } = false;
+
+        /// Dernière synchronisation réussie pour ce client
+        [Column("DateDerniereSynchroSISS")]
+        public DateTime? DateDerniereSynchroSISS { get; set; }
+
+        /// Empreinte SHA-256 des champs gérés par le SISS (détection de changement)
+        [Column("HashReferentiel")]
+        [MaxLength(64)]
+        public string? HashReferentiel { get; set; }
 
         public DetailClient? Detail { get; set; }
     }

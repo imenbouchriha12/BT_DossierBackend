@@ -12,21 +12,26 @@ namespace Backend.BL.BL
         private readonly IHistoriqueRepository _repository;
         private readonly IMapper _mapper;
         private readonly ILogger<HistoriqueService> _logger;
+        private readonly ICurrentUserService _currentUserService;
 
-        public HistoriqueService(IHistoriqueRepository repository, IMapper mapper, ILogger<HistoriqueService> logger)
+        public HistoriqueService(IHistoriqueRepository repository, IMapper mapper, ILogger<HistoriqueService> logger, ICurrentUserService currentUserService)
         {
             _repository = repository;
             _mapper = mapper;
             _logger = logger;
+            _currentUserService = currentUserService;
         }
 
         public async Task<PagedHistoriqueResult> SearchAsync(HistoriqueSearchDto search)
         {
             _logger.LogInformation("Recherche d'historique avec les critères fournis");
 
+            // Admin voit tout ; les autres (Superviseur, Agent) ne voient que leur propre activité.
+            int? userId = _currentUserService.IsAdmin ? null : _currentUserService.UserId;
+
             var (items, total) = await _repository.SearchAsync(
                 search.TableModifiee, search.UtilisateurNom, search.Action,
-                search.DateDebut, search.DateFin, search.Page, search.PageSize);
+                search.DateDebut, search.DateFin, search.Page, search.PageSize, userId);
 
             return new PagedHistoriqueResult
             {

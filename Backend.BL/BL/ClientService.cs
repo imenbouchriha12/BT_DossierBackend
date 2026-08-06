@@ -19,8 +19,9 @@ namespace Backend.BL.BL
         private readonly ICurrentUserService _currentUser;
         private readonly INotificationService _notificationService;
         private readonly IUserRepository _userRepository;
+        private readonly IActivityService _activityService;
 
-        public ClientService(IClientRepository clientRepository, IDocumentRepository documentRepository, IMapper mapper, ILogger<ClientService> logger, IHistoriqueService historiqueService, ICurrentUserService currentUser, INotificationService notificationService, IUserRepository userRepository)
+        public ClientService(IClientRepository clientRepository, IDocumentRepository documentRepository, IMapper mapper, ILogger<ClientService> logger, IHistoriqueService historiqueService, ICurrentUserService currentUser, INotificationService notificationService, IUserRepository userRepository, IActivityService activityService)
         {
             _clientRepository = clientRepository;
             _documentRepository = documentRepository;
@@ -30,6 +31,7 @@ namespace Backend.BL.BL
             _currentUser = currentUser;
             _notificationService = notificationService;
             _userRepository = userRepository;
+            _activityService = activityService;
         }
 
         public async Task<PagedResult<ClientDto>> SearchAsync(ClientSearchDto search)
@@ -40,9 +42,13 @@ namespace Backend.BL.BL
                 ? ParseStatut(search.Statut)
                 : (StatutClient?)null;
 
+            if (!string.IsNullOrWhiteSpace(search.TypeClient) && !ClientTypes.IsValid(search.TypeClient))
+                throw new ArgumentException($"Type de client non reconnu : '{search.TypeClient}'");
+
             var (items, total) = await _clientRepository.SearchAsync(
                 search.CodeClient, search.Nom, search.Prenom,
-                search.Ville, statutEnum, search.DateDebut, search.DateFin,
+                search.Ville, statutEnum, search.TypeClient,
+                search.DateDebut, search.DateFin,
                 search.Page, search.PageSize);
 
             return new PagedResult<ClientDto>
@@ -84,25 +90,31 @@ namespace Backend.BL.BL
         {
             _logger.LogInformation("Création d'un nouveau client : {Nom} {Prenom}", dto.Nom, dto.Prenom);
 
+            var typeClient = string.IsNullOrWhiteSpace(dto.TypeClient) ? "Particulier" : dto.TypeClient.Trim();
+            if (!ClientTypes.IsValid(typeClient))
+                throw new ArgumentException($"Type de client non reconnu : '{typeClient}'. Types valides : {string.Join(", ", ClientTypes.All)}");
+
             await using var transaction = await _clientRepository.BeginTransactionAsync();
 
             var codeClient = await GenerateUniqueCodeClientAsync();
 
             var client = new Client
             {
-                CodeClient    = codeClient,
-                Nom           = dto.Nom,
-                Prenom        = dto.Prenom,
-                DateNaissance = dto.DateNaissance,
-                Sexe          = dto.Sexe,
-                Nationalite   = dto.Nationalite,
-                Telephone     = dto.Telephone,
-                Email         = dto.Email,
-                Adresse       = dto.Adresse,
-                Ville         = dto.Ville,
-                DateCreation  = DateTime.UtcNow,
-                Statut        = ParseStatut(dto.Statut),
-                TypeClient    = string.IsNullOrWhiteSpace(dto.TypeClient) ? "Particulier" : dto.TypeClient
+                CodeClient       = codeClient,
+                Nom              = dto.Nom,
+                Prenom           = dto.Prenom,
+                DateNaissance    = dto.DateNaissance,
+                Sexe             = dto.Sexe,
+                Nationalite      = dto.Nationalite,
+                Telephone        = dto.Telephone,
+                Email            = dto.Email,
+                Adresse          = dto.Adresse,
+                Ville            = dto.Ville,
+                DateCreation     = DateTime.UtcNow,
+                Statut           = ParseStatut(dto.Statut),
+                TypeClient       = typeClient,
+                MatriculeFiscal  = string.IsNullOrWhiteSpace(dto.MatriculeFiscal) ? null : dto.MatriculeFiscal.Trim(),
+                RegistreCommerce = string.IsNullOrWhiteSpace(dto.RegistreCommerce) ? null : dto.RegistreCommerce.Trim()
             };
 
             if (dto.Detail != null)
@@ -128,6 +140,19 @@ namespace Backend.BL.BL
             await transaction.CommitAsync();
 
             var created = await _clientRepository.GetByIdWithDetailAsync(client.Id);
+
+            await _activityService.EnregistrerEvenementAsync(
+                client.Id, EvenementTypes.Client,
+                $"Dossier client créé ({client.CodeClient}).",
+                donneesJson: JsonSerializer.Serialize(new
+                {
+                    client.CodeClient,
+                    client.Nom,
+                    client.Prenom,
+                    client.Statut,
+                    client.TypeClient
+                }));
+
             return _mapper.Map<ClientDto>(created);
         }
 
@@ -153,6 +178,9 @@ namespace Backend.BL.BL
             var oldTelephone = client.Telephone; var oldEmail = client.Email;
             var oldAdresse = client.Adresse; var oldVille = client.Ville;
             var oldStatut = client.Statut;
+            var oldTypeClient = client.TypeClient;
+            var oldMatriculeFiscal = client.MatriculeFiscal;
+            var oldRegistreCommerce = client.RegistreCommerce;
 
             client.Nom = dto.Nom;
             client.Prenom = dto.Prenom;
@@ -164,6 +192,9 @@ namespace Backend.BL.BL
             client.Adresse = dto.Adresse;
             client.Ville = dto.Ville;
             client.Statut = ParseStatut(dto.Statut);
+            client.TypeClient = string.IsNullOrWhiteSpace(dto.TypeClient) ? "Particulier" : dto.TypeClient.Trim();
+            client.MatriculeFiscal = string.IsNullOrWhiteSpace(dto.MatriculeFiscal) ? null : dto.MatriculeFiscal.Trim();
+            client.RegistreCommerce = string.IsNullOrWhiteSpace(dto.RegistreCommerce) ? null : dto.RegistreCommerce.Trim();
 
             Track("Nom", oldNom, dto.Nom);
             Track("Prénom", oldPrenom, dto.Prenom);
@@ -175,6 +206,9 @@ namespace Backend.BL.BL
             Track("Adresse", oldAdresse, dto.Adresse);
             Track("Ville", oldVille, dto.Ville);
             Track("Statut", oldStatut.ToString(), ParseStatut(dto.Statut).ToString());
+            Track("Type client", oldTypeClient, client.TypeClient);
+            Track("Matricule fiscal", oldMatriculeFiscal, client.MatriculeFiscal);
+            Track("Registre de commerce", oldRegistreCommerce, client.RegistreCommerce);
 
             if (dto.Detail != null)
             {
@@ -237,6 +271,18 @@ namespace Backend.BL.BL
             }
 
             await transaction.CommitAsync();
+
+            if (oldStatut != client.Statut)
+            {
+                await _activityService.EnregistrerEvenementAsync(
+                    id, EvenementTypes.Statut,
+                    $"Statut du dossier : {oldStatut} → {client.Statut}.",
+                    donneesJson: JsonSerializer.Serialize(new
+                    {
+                        AncienStatut = oldStatut.ToString(),
+                        NouveauStatut = client.Statut.ToString()
+                    }));
+            }
 
             var updated = await _clientRepository.GetByIdWithDetailAsync(id);
             return _mapper.Map<ClientDto>(updated);
@@ -359,6 +405,58 @@ namespace Backend.BL.BL
                 throw new InvalidOperationException($"Aucun client importé. {errors.Count} erreur(s).");
 
             return imported;
+        }
+
+        public Task<byte[]> GenerateImportTemplateAsync()
+        {
+            _logger.LogInformation("Génération du modèle Excel d'import clients");
+
+            var stream = new MemoryStream();
+            using (var package = new OfficeOpenXml.ExcelPackage(stream))
+            {
+                var ws = package.Workbook.Worksheets.Add("Clients");
+
+                // Instructions
+                ws.Cells["A1"].Value = "MODÈLE D'IMPORT CLIENTS — LUMINA FINANCE";
+                ws.Cells["A1"].Style.Font.Bold = true;
+                ws.Cells["A1"].Style.Font.Size = 13;
+                ws.Cells["A2"].Value = "Respectez l'ordre des colonnes ci-dessous. Supprimez la ligne d'exemple avant l'import.";
+                ws.Cells["A2"].Style.Font.Italic = true;
+                ws.Cells["A2"].Style.Font.Color.SetColor(System.Drawing.Color.Gray);
+
+                // Entêtes (ligne 4) — alignés sur l'import positionnel du backend
+                var headers = new[] {
+                    "CodeClient", "Nom", "Prénom", "Téléphone", "Email", "Ville", "Statut"
+                };
+                for (int i = 0; i < headers.Length; i++)
+                {
+                    ws.Cells[4, i + 1].Value = headers[i];
+                    ws.Cells[4, i + 1].Style.Font.Bold = true;
+                    ws.Cells[4, i + 1].Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+                    ws.Cells[4, i + 1].Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.FromArgb(26, 35, 126));
+                    ws.Cells[4, i + 1].Style.Font.Color.SetColor(System.Drawing.Color.White);
+                }
+
+                // Ligne d'exemple (ligne 5)
+                ws.Cells[5, 1].Value = "1455000001";
+                ws.Cells[5, 2].Value = "DUPONT";
+                ws.Cells[5, 3].Value = "Marie";
+                ws.Cells[5, 4].Value = "+216 71 123 456";
+                ws.Cells[5, 5].Value = "marie.dupont@email.com";
+                ws.Cells[5, 6].Value = "Tunis";
+                ws.Cells[5, 7].Value = "Actif";
+
+                // Note sur les statuts acceptés
+                ws.Cells["G7"].Value = "Statuts acceptés : Actif | EnAttente | Bloqué";
+                ws.Cells["G7"].Style.Font.Italic = true;
+                ws.Cells["G7"].Style.Font.Color.SetColor(System.Drawing.Color.Gray);
+
+                ws.Cells.AutoFitColumns();
+                package.Save();
+            }
+
+            stream.Position = 0;
+            return Task.FromResult(stream.ToArray());
         }
 
         public async Task<byte[]> ExportExcelAsync(ClientSearchDto search)

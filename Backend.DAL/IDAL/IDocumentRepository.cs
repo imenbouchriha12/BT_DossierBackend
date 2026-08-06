@@ -6,6 +6,7 @@ namespace Backend.DAL.IDAL
     {
         Task<DocumentClient?> GetByIdAsync(int id);
         Task<List<DocumentClient>> GetByClientIdAsync(int clientId);
+        Task<List<DocumentClient>> GetAllByClientIdsAsync(IEnumerable<int> idClients);
         Task<List<DocumentClient>> GetAllAsync();
         Task<(List<DocumentClient> Items, int Total)> GetByClientIdPagedAsync(int clientId, int page, int pageSize);
         Task AddAsync(DocumentClient document);

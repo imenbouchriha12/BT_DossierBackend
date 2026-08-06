@@ -25,10 +25,12 @@ namespace Backend.DAL.DAL
 
         public async Task<(List<HistoriqueModification> Items, int Total)> SearchAsync(
             string? tableModifiee, string? utilisateurNom, string? action,
-            DateTime? dateDebut, DateTime? dateFin, int page, int pageSize)
+            DateTime? dateDebut, DateTime? dateFin, int page, int pageSize, int? userId = null)
         {
             var query = _context.HistoriqueModifications.AsQueryable();
 
+            if (userId.HasValue)
+                query = query.Where(h => h.UtilisateurId == userId.Value);
             if (!string.IsNullOrWhiteSpace(tableModifiee))
                 query = query.Where(h => h.TableModifiee == tableModifiee);
             if (!string.IsNullOrWhiteSpace(utilisateurNom))

@@ -69,7 +69,7 @@ namespace Backend.DAL.DAL
         public async Task<int> GetCountAsync(int userId)
         {
             return await _context.Reminders
-                .CountAsync(r => (r.CreatedByUserId == userId || r.AssignedToUserId == userId) && r.Status != "Completed" && r.Status != "Cancelled");
+                .CountAsync(r => (r.CreatedByUserId == userId || r.AssignedToUserId == userId) && r.Status != "Termine" && r.Status != "Annule");
         }
 
         public async Task<int> GetCountByStatusAsync(int userId, string status)
@@ -82,7 +82,7 @@ namespace Backend.DAL.DAL
         {
             return await _context.Reminders
                 .CountAsync(r => (r.CreatedByUserId == userId || r.AssignedToUserId == userId)
-                    && r.Status != "Completed" && r.Status != "Cancelled"
+                    && r.Status != "Termine" && r.Status != "Annule"
                     && r.DueDate < DateTime.UtcNow);
         }
 
@@ -90,14 +90,14 @@ namespace Backend.DAL.DAL
         {
             return await _context.Reminders
                 .CountAsync(r => (r.CreatedByUserId == userId || r.AssignedToUserId == userId)
-                    && r.Priority == "Urgent"
-                    && r.Status != "Completed" && r.Status != "Cancelled");
+                    && r.Priority == "Critique"
+                    && r.Status != "Termine" && r.Status != "Annule");
         }
 
         public async Task<List<Reminder>> GetOverdueUnnotifiedAsync()
         {
             return await _context.Reminders
-                .Where(r => r.Status != "Completed" && r.Status != "Cancelled"
+                .Where(r => r.Status != "Termine" && r.Status != "Annule"
                     && r.DueDate < DateTime.UtcNow
                     && r.NotifiedAt == null)
                 .Include(r => r.Client)
@@ -124,6 +124,60 @@ namespace Backend.DAL.DAL
         public async Task SaveChangesAsync()
         {
             await _context.SaveChangesAsync();
+        }
+        public async Task<List<Reminder>> GetAllTeamAsync(string? type, string? priority, string? status, int? clientId, int? assignedToUserId, DateTime? dateFrom, DateTime? dateTo)
+        {
+            var query = _context.Reminders
+                .Include(r => r.Client)
+                .Include(r => r.AssignedToUser)
+                .AsQueryable();
+
+            if (!string.IsNullOrEmpty(type))
+                query = query.Where(r => r.Type == type);
+
+            if (!string.IsNullOrEmpty(priority))
+                query = query.Where(r => r.Priority == priority);
+
+            if (!string.IsNullOrEmpty(status))
+                query = query.Where(r => r.Status == status);
+
+            if (clientId.HasValue)
+                query = query.Where(r => r.ClientId == clientId.Value);
+
+            if (assignedToUserId.HasValue)
+                query = query.Where(r => r.AssignedToUserId == assignedToUserId.Value);
+
+            if (dateFrom.HasValue)
+                query = query.Where(r => r.DueDate >= dateFrom.Value);
+
+            if (dateTo.HasValue)
+                query = query.Where(r => r.DueDate <= dateTo.Value);
+
+            return await query.OrderBy(r => r.DueDate).ToListAsync();
+        }
+
+        public async Task<int> GetAllTeamCountAsync(string? status)
+        {
+            var query = _context.Reminders.AsQueryable();
+            if (!string.IsNullOrEmpty(status))
+                query = query.Where(r => r.Status == status);
+            return await query.CountAsync();
+        }
+
+        public async Task<int> GetAllTeamOverdueCountAsync()
+        {
+            return await _context.Reminders
+                .Where(r => r.Status != "Termine" && r.DueDate < DateTime.UtcNow)
+                .CountAsync();
+        }
+
+        public async Task<int> GetAllTeamUrgentPendingCountAsync()
+        {
+            var now = DateTime.UtcNow;
+            var soon = now.AddDays(2);
+            return await _context.Reminders
+                .Where(r => r.Status != "Termine" && r.Priority == "Critique" && r.DueDate <= soon)
+                .CountAsync();
         }
     }
 }

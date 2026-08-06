@@ -13,6 +13,7 @@ namespace Backend.BL.IBL
         Task RestoreAsync(int id);
         Task<byte[]> ExportExcelAsync(ClientSearchDto search);
         Task<int> ImportExcelAsync(Stream fileStream, string fileName);
+        Task<byte[]> GenerateImportTemplateAsync();
         Task<ClientStatsDto> GetStatsAsync();
         Task<List<string>> GetAllVillesAsync();
     }

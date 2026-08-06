@@ -16,15 +16,6 @@ namespace Backend.BL.BL
         private readonly IHistoriqueService _historiqueService;
         private readonly ICurrentUserService _currentUser;
 
-        // Documents obligatoires pour qu'un client soit "Actif"
-        private static readonly HashSet<string> DOCUMENTS_REQUIS = new()
-        {
-            "CIN", // Carte d'identité
-            "Justificatif de domicile",
-            "Photo",
-            "Fiche de renseignements"
-        };
-
         public ClientStatusManager(
             IClientRepository clientRepository,
             IDocumentRepository documentRepository,
@@ -76,50 +67,30 @@ namespace Backend.BL.BL
         }
 
         /// <summary>
-        /// Vérifie si le client a tous les documents requis validés
+        /// Vérifie si tous les documents du client sont validés
         /// </summary>
         private StatutClient DeterminerStatut(IEnumerable<DocumentClient> documents)
         {
-            var docsValides = documents
-                .Where(d => d.StatutValidation == "Validé")
-                .Select(d => d.TypeDocument)
-                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var docList = documents.ToList();
 
-            // Tous les documents requis sont-ils validés ?
-            var tousValidés = DOCUMENTS_REQUIS.All(requis => 
-                docsValides.Contains(requis));
+            if (docList.Count == 0)
+                return StatutClient.EnAttente;
 
-            if (tousValidés)
-            {
-                return StatutClient.Actif;
-            }
+            var tousValides = docList.All(d => d.StatutValidation == "Validé");
 
-            // Au moins un document requis validé
-            var auMoinsUnValide = DOCUMENTS_REQUIS.Any(requis => 
-                docsValides.Contains(requis));
-
-            if (auMoinsUnValide)
-            {
-                return StatutClient.EnAttente; // Dossier en cours
-            }
-
-            // Aucun document validé
-            return StatutClient.EnAttente; // Nouveau client
+            return tousValides ? StatutClient.Actif : StatutClient.EnAttente;
         }
 
         /// <summary>
-        /// Obtient les documents manquants pour un client
+        /// Obtient les documents non encore validés pour un client
         /// </summary>
         public async Task<List<string>> GetDocumentsManquantsAsync(int clientId)
         {
             var documents = await _documentRepository.GetByClientIdAsync(clientId);
-            var docsValides = documents
-                .Where(d => d.StatutValidation == "Validé")
+            return documents
+                .Where(d => d.StatutValidation != "Validé")
                 .Select(d => d.TypeDocument)
-                .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-            return DOCUMENTS_REQUIS
-                .Where(requis => !docsValides.Contains(requis))
+                .Distinct()
                 .ToList();
         }
 
@@ -146,7 +117,7 @@ namespace Backend.BL.BL
                 ClientId = clientId,
                 CodeClient = client.CodeClient,
                 StatutActuel = client.Statut.ToString(),
-                DocumentsRequis = DOCUMENTS_REQUIS.Count,
+                DocumentsRequis = documents.Count,
                 DocumentsValides = documents.Count(d => d.StatutValidation == "Validé"),
                 DocumentsEnAttente = documents.Count(d => d.StatutValidation == "En attente"),
                 DocumentsRejetes = documents.Count(d => d.StatutValidation == "Rejeté"),
@@ -201,9 +172,9 @@ namespace Backend.BL.BL
             _logger.LogInformation("Déblocage du client {ClientId}", clientId);
 
             client.MotifBlocage = null;
+            client.Statut = StatutClient.EnAttente;
             await _clientRepository.SaveChangesAsync();
 
-            // Recalculer le statut en fonction des documents
             var nouveauStatut = await RecalculerStatutClientAsync(clientId);
 
             await _historiqueService.EnregistrerAsync(

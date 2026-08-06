@@ -26,6 +26,9 @@ namespace Backend.DAL.IDAL
         /// Retourne tous les utilisateurs avec leurs rôles
         Task<List<User>> GetAllWithRolesAsync();
 
+        /// Retourne tous les utilisateurs actifs ayant un rôle donné (ex: "Agent", "Superviseur")
+        Task<List<User>> GetByRoleAsync(string role);
+
         /// Vérifie si un email existe déjà
         Task<bool> EmailExistsAsync(string email);
 

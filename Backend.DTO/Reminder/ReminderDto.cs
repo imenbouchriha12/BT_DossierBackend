@@ -25,8 +25,8 @@ namespace Backend.DTO.Reminder
     {
         public string Title { get; set; } = string.Empty;
         public string? Description { get; set; }
-        public string Type { get; set; } = "Custom";
-        public string Priority { get; set; } = "Medium";
+        public string Type { get; set; } = "Autre";
+        public string Priority { get; set; } = "Normale";
         public DateTime DueDate { get; set; }
         public int? ClientId { get; set; }
         public int? AssignedToUserId { get; set; }
@@ -62,5 +62,16 @@ namespace Backend.DTO.Reminder
         public int Completed { get; set; }
         public int Overdue { get; set; }
         public int Urgent { get; set; }
+    }
+
+    public class UpdateReminderStatusDto
+    {
+        public string Status { get; set; } = string.Empty;
+    }
+
+    public class CreateDocumentReminderDto
+    {
+        public int ClientId { get; set; }
+        public string Title { get; set; } = string.Empty;
     }
 }

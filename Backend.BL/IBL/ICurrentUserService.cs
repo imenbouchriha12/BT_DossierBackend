@@ -4,5 +4,6 @@ namespace Backend.BL.IBL
     {
         int UserId { get; }
         string UserName { get; }
+        bool IsAdmin { get; }
     }
 }

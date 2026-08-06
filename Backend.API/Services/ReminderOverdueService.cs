@@ -31,7 +31,14 @@ namespace Backend.API.Services
                     _logger.LogError(ex, "Erreur lors de la vérification des rappels en retard");
                 }
 
-                await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
+                try
+                {
+                    await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
+                }
+                catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+                {
+                    break;
+                }
             }
         }
 
@@ -169,7 +176,7 @@ namespace Backend.API.Services
             </p>
             <p style='color: #94a3b8; font-size: 13px; line-height: 1.5; margin: 0; text-align: center;'>
               Cet email a été généré automatiquement. Merci de ne pas y répondre.<br/>
-              &copy; 2026 GestionBanque. Tous droits réservés.
+              &copy; 2026 BT DocCenter. Tous droits réservés.
             </p>
           </td>
         </tr>

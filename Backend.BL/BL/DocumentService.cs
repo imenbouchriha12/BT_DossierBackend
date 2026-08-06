@@ -17,8 +17,9 @@ namespace Backend.BL.BL
         private readonly IHistoriqueService _historiqueService;
         private readonly ICurrentUserService _currentUser;
         private readonly INotificationService _notificationService;
-        private readonly IUserRepository _userRepository;
         private readonly ClientStatusManager _statusManager;
+        private readonly IWorkflowService _workflowService;
+        private readonly IActivityService _activityService;
 
         public DocumentService(
             IDocumentRepository documentRepository,
@@ -28,8 +29,9 @@ namespace Backend.BL.BL
             IHistoriqueService historiqueService,
             ICurrentUserService currentUser,
             INotificationService notificationService,
-            IUserRepository userRepository,
-            ClientStatusManager statusManager)
+            ClientStatusManager statusManager,
+            IWorkflowService workflowService,
+            IActivityService activityService)
         {
             _documentRepository = documentRepository;
             _clientRepository = clientRepository;
@@ -38,8 +40,9 @@ namespace Backend.BL.BL
             _historiqueService = historiqueService;
             _currentUser = currentUser;
             _notificationService = notificationService;
-            _userRepository = userRepository;
             _statusManager = statusManager;
+            _workflowService = workflowService;
+            _activityService = activityService;
         }
 
         public async Task<List<DocumentDto>> GetByClientIdAsync(int clientId)
@@ -104,24 +107,30 @@ namespace Backend.BL.BL
 
             await _historiqueService.EnregistrerAsync("Documents", document.Id, "Création", null, $"Document {typeDocument} - {savedName}", _currentUser.UserId, _currentUser.UserName);
 
-            if (statutValidation == "En attente")
-            {
-                var admins = await _userRepository.GetAllWithRolesAsync();
-                var adminUsers = admins.Where(u => u.UserRoles.Any(ur => ur.Role.Name == "Admin" || ur.Role.Name == "Superviseur"));
-                foreach (var admin in adminUsers)
-                {
-                    await _notificationService.CreateAsync(new CreateNotificationDto
-                    {
-                        UserId = admin.Id,
-                        Titre = "Nouveau document en attente",
-                        Message = $"Un document {typeDocument} pour le client {client.CodeClient} est en attente de validation.",
-                        Type = "Info",
-                        Lien = $"/detail-client/{idClient}"
-                    });
-                }
-            }
-
             var created = await _documentRepository.GetByIdAsync(document.Id);
+
+            // ✅ TIMELINE CLIENT : document ajouté
+            await _activityService.EnregistrerEvenementAsync(
+                idClient, EvenementTypes.Document,
+                $"Document « {typeDocument} » ajouté au dossier.",
+                donneesJson: System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    IdDocument = document.Id,
+                    NomFichier = savedName,
+                    TypeDocument = typeDocument
+                }),
+                idLien: document.Id, typeLien: nameof(DocumentClient));
+
+            // ✅ WORKFLOW DE VALIDATION MULTI-NIVEAUX (Agent → Superviseur → Admin)
+            try
+            {
+                await _workflowService.CreateForDocumentAsync(created!, _currentUser.UserId, _currentUser.UserName);
+                _logger.LogInformation("Workflow de validation créé pour le document {DocId}", document.Id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Erreur lors de la création du workflow pour le document {DocId}", document.Id);
+            }
             
             // ✅ MISE À JOUR AUTOMATIQUE DU STATUT CLIENT
             try
@@ -163,6 +172,10 @@ namespace Backend.BL.BL
             await _documentRepository.SaveChangesAsync();
 
             await _historiqueService.EnregistrerAsync("Documents", id, "Suppression", $"Document {doc.TypeDocument} - {doc.NomFichier}", "Supprimé", _currentUser.UserId, _currentUser.UserName);
+
+            await _activityService.EnregistrerEvenementAsync(
+                doc.IdClient, EvenementTypes.Document,
+                $"Document « {doc.TypeDocument} » supprimé du dossier.");
 
             _logger.LogInformation("Document supprimé : {Id}", id);
         }
@@ -210,6 +223,16 @@ namespace Backend.BL.BL
             }
 
             var updated = await _documentRepository.GetByIdAsync(id);
+
+            await _activityService.EnregistrerEvenementAsync(
+                doc.IdClient, EvenementTypes.Document,
+                $"Statut du document « {doc.TypeDocument} » : {ancienStatut} → {statut}.",
+                donneesJson: System.Text.Json.JsonSerializer.Serialize(new
+                {
+                    AncienStatut = ancienStatut,
+                    NouveauStatut = statut
+                }),
+                idLien: id, typeLien: nameof(DocumentClient));
             
             // ✅ MISE À JOUR AUTOMATIQUE DU STATUT CLIENT après validation/rejet
             try

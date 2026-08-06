@@ -22,6 +22,112 @@ namespace Backend.DAL.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("Backend.DAL.Entities.AlertesFraude", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("IdAlerte");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Agence")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)")
+                        .HasColumnName("Agence");
+
+                    b.Property<string>("Commentaire")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)")
+                        .HasColumnName("Commentaire");
+
+                    b.Property<DateTime>("DateDetection")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("DateDetection");
+
+                    b.Property<DateTime?>("DateTraitement")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("DateTraitement");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)")
+                        .HasColumnName("Description");
+
+                    b.Property<string>("DonneesJson")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("DonneesJson");
+
+                    b.Property<string>("Fingerprint")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("Fingerprint");
+
+                    b.Property<int>("IdClient")
+                        .HasColumnType("int")
+                        .HasColumnName("IdClient");
+
+                    b.Property<int?>("IdMouvement")
+                        .HasColumnType("int")
+                        .HasColumnName("IdMouvement");
+
+                    b.Property<int?>("IdRegle")
+                        .HasColumnType("int")
+                        .HasColumnName("IdRegle");
+
+                    b.Property<decimal?>("Montant")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("Montant");
+
+                    b.Property<string>("Niveau")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("Niveau");
+
+                    b.Property<string>("NumCompte")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("NumCompte");
+
+                    b.Property<int>("Score")
+                        .HasColumnType("int")
+                        .HasColumnName("Score");
+
+                    b.Property<string>("Statut")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("Statut");
+
+                    b.Property<int?>("TraiteeParUserId")
+                        .HasColumnType("int")
+                        .HasColumnName("TraiteeParUserId");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("Type");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Fingerprint");
+
+                    b.HasIndex("IdRegle");
+
+                    b.HasIndex("Statut");
+
+                    b.HasIndex("TraiteeParUserId");
+
+                    b.HasIndex("IdClient", "DateDetection");
+
+                    b.ToTable("AlertesFraude", "dbo");
+                });
+
             modelBuilder.Entity("Backend.DAL.Entities.Client", b =>
                 {
                     b.Property<int>("Id")
@@ -45,6 +151,10 @@ namespace Backend.DAL.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("DateCreation");
 
+                    b.Property<DateTime?>("DateDerniereSynchroSISS")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("DateDerniereSynchroSISS");
+
                     b.Property<DateTime>("DateNaissance")
                         .HasColumnType("datetime2")
                         .HasColumnName("DateNaissance");
@@ -57,6 +167,20 @@ namespace Backend.DAL.Migrations
                     b.Property<bool>("EstArchive")
                         .HasColumnType("bit")
                         .HasColumnName("EstArchive");
+
+                    b.Property<bool>("EstImporteSISS")
+                        .HasColumnType("bit")
+                        .HasColumnName("EstImporteSISS");
+
+                    b.Property<string>("HashReferentiel")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)")
+                        .HasColumnName("HashReferentiel");
+
+                    b.Property<string>("MatriculeFiscal")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("MatriculeFiscal");
 
                     b.Property<string>("MotifBlocage")
                         .HasMaxLength(500)
@@ -77,6 +201,11 @@ namespace Backend.DAL.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("Prenom");
+
+                    b.Property<string>("RegistreCommerce")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("RegistreCommerce");
 
                     b.Property<string>("Sexe")
                         .IsRequired()
@@ -110,7 +239,7 @@ namespace Backend.DAL.Migrations
                     b.HasIndex("CodeClient")
                         .IsUnique();
 
-                    b.ToTable("Clients", "dbo");
+                    b.ToTable("Client", "dbo");
                 });
 
             modelBuilder.Entity("Backend.DAL.Entities.ClientPortalToken", b =>
@@ -205,12 +334,164 @@ namespace Backend.DAL.Migrations
                     b.ToTable("ClientTags", "dbo");
                 });
 
+            modelBuilder.Entity("Backend.DAL.Entities.Compte", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("IdCompte");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Agence")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)")
+                        .HasColumnName("Agence");
+
+                    b.Property<DateTime?>("DateOuverture")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("DateOuverture");
+
+                    b.Property<string>("Devise")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("nvarchar(3)")
+                        .HasColumnName("Devise");
+
+                    b.Property<int>("IdClient")
+                        .HasColumnType("int")
+                        .HasColumnName("IdClient");
+
+                    b.Property<string>("NumCompte")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("NumCompte");
+
+                    b.Property<decimal>("Solde")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("Solde");
+
+                    b.Property<decimal>("SoldeContreValeur")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("SoldeContreValeur");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdClient");
+
+                    b.HasIndex("NumCompte", "Agence")
+                        .IsUnique();
+
+                    b.ToTable("Compte", "dbo");
+                });
+
+            modelBuilder.Entity("Backend.DAL.Entities.ContactClient", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("IdContact");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Adresse")
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)")
+                        .HasColumnName("Adresse");
+
+                    b.Property<DateTime>("DateCreation")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("DateCreation");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)")
+                        .HasColumnName("Email");
+
+                    b.Property<int>("IdClient")
+                        .HasColumnType("int")
+                        .HasColumnName("IdClient");
+
+                    b.Property<string>("Nom")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("Nom");
+
+                    b.Property<string>("Prenom")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("Prenom");
+
+                    b.Property<string>("Relation")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("Relation");
+
+                    b.Property<string>("Telephone")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)")
+                        .HasColumnName("Telephone");
+
+                    b.Property<string>("TypeContact")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)")
+                        .HasColumnName("TypeContact");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdClient", "TypeContact");
+
+                    b.ToTable("ContactClient", "dbo");
+                });
+
+            modelBuilder.Entity("Backend.DAL.Entities.Cours", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("IdCours");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Devise")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("nvarchar(3)")
+                        .HasColumnName("Devise");
+
+                    b.Property<DateTime>("Journee")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("Journee");
+
+                    b.Property<int>("Multiplicateur")
+                        .HasColumnType("int")
+                        .HasColumnName("Multiplicateur");
+
+                    b.Property<decimal>("Valeur")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("Cours");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Journee", "Devise")
+                        .IsUnique();
+
+                    b.ToTable("Cours", "dbo");
+                });
+
             modelBuilder.Entity("Backend.DAL.Entities.DetailClient", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
-                        .HasColumnName("IdDetail");
+                        .HasColumnName("IdDetailClient");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
@@ -253,7 +534,7 @@ namespace Backend.DAL.Migrations
                     b.HasIndex("IdClient")
                         .IsUnique();
 
-                    b.ToTable("DetailClients", "dbo");
+                    b.ToTable("DetailClient", "dbo");
                 });
 
             modelBuilder.Entity("Backend.DAL.Entities.DocumentClient", b =>
@@ -283,6 +564,12 @@ namespace Backend.DAL.Migrations
                         .HasColumnType("nvarchar(max)")
                         .HasColumnName("NomFichier");
 
+                    b.Property<string>("Origine")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("Origine");
+
                     b.Property<string>("StatutValidation")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)")
@@ -303,7 +590,7 @@ namespace Backend.DAL.Migrations
 
                     b.HasIndex("UploadedByUserId");
 
-                    b.ToTable("DocumentClients", "dbo");
+                    b.ToTable("DocumentClient", "dbo");
                 });
 
             modelBuilder.Entity("Backend.DAL.Entities.DocumentTag", b =>
@@ -612,7 +899,261 @@ namespace Backend.DAL.Migrations
                             Ordre = 5,
                             TailleMaxMo = 5,
                             TypeClient = "VIP"
+                        },
+                        new
+                        {
+                            Id = 17,
+                            DateCreation = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Recto et verso en cours de validité",
+                            EstObligatoire = true,
+                            FormatsAcceptes = "pdf,jpg,jpeg,png",
+                            IsActive = true,
+                            NomDocument = "Carte d'Identité Nationale (CIN)",
+                            Ordre = 1,
+                            TailleMaxMo = 5,
+                            TypeClient = "Professionnel"
+                        },
+                        new
+                        {
+                            Id = 18,
+                            DateCreation = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Attestation d'affectation du matricule fiscal",
+                            EstObligatoire = true,
+                            FormatsAcceptes = "pdf,jpg,jpeg,png",
+                            IsActive = true,
+                            NomDocument = "Matricule fiscal",
+                            Ordre = 2,
+                            TailleMaxMo = 5,
+                            TypeClient = "Professionnel"
+                        },
+                        new
+                        {
+                            Id = 19,
+                            DateCreation = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Extrait du registre de commerce (si assujetti)",
+                            EstObligatoire = false,
+                            FormatsAcceptes = "pdf,jpg,jpeg,png",
+                            IsActive = true,
+                            NomDocument = "Registre de commerce",
+                            Ordre = 3,
+                            TailleMaxMo = 10,
+                            TypeClient = "Professionnel"
+                        },
+                        new
+                        {
+                            Id = 20,
+                            DateCreation = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "RIB du compte professionnel",
+                            EstObligatoire = true,
+                            FormatsAcceptes = "pdf,jpg,jpeg,png",
+                            IsActive = true,
+                            NomDocument = "RIB bancaire professionnel",
+                            Ordre = 4,
+                            TailleMaxMo = 5,
+                            TypeClient = "Professionnel"
+                        },
+                        new
+                        {
+                            Id = 21,
+                            DateCreation = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Dernier avis d'imposition",
+                            EstObligatoire = true,
+                            FormatsAcceptes = "pdf",
+                            IsActive = true,
+                            NomDocument = "Avis d'imposition",
+                            Ordre = 5,
+                            TailleMaxMo = 10,
+                            TypeClient = "Professionnel"
+                        },
+                        new
+                        {
+                            Id = 22,
+                            DateCreation = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Récépissé de déclaration à la DGRH",
+                            EstObligatoire = true,
+                            FormatsAcceptes = "pdf,jpg,jpeg,png",
+                            IsActive = true,
+                            NomDocument = "Récépissé de déclaration",
+                            Ordre = 1,
+                            TailleMaxMo = 10,
+                            TypeClient = "Association"
+                        },
+                        new
+                        {
+                            Id = 23,
+                            DateCreation = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Statuts déposés et visés",
+                            EstObligatoire = true,
+                            FormatsAcceptes = "pdf",
+                            IsActive = true,
+                            NomDocument = "Statuts de l'association",
+                            Ordre = 2,
+                            TailleMaxMo = 10,
+                            TypeClient = "Association"
+                        },
+                        new
+                        {
+                            Id = 24,
+                            DateCreation = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Composition du bureau et PV d'élection",
+                            EstObligatoire = true,
+                            FormatsAcceptes = "pdf,jpg,jpeg,png",
+                            IsActive = true,
+                            NomDocument = "Liste du bureau exécutif",
+                            Ordre = 3,
+                            TailleMaxMo = 5,
+                            TypeClient = "Association"
+                        },
+                        new
+                        {
+                            Id = 25,
+                            DateCreation = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Pièce d'identité du président",
+                            EstObligatoire = true,
+                            FormatsAcceptes = "pdf,jpg,jpeg,png",
+                            IsActive = true,
+                            NomDocument = "CIN du président",
+                            Ordre = 4,
+                            TailleMaxMo = 5,
+                            TypeClient = "Association"
+                        },
+                        new
+                        {
+                            Id = 26,
+                            DateCreation = new DateTime(2024, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "RIB du compte association",
+                            EstObligatoire = true,
+                            FormatsAcceptes = "pdf,jpg,jpeg,png",
+                            IsActive = true,
+                            NomDocument = "RIB bancaire association",
+                            Ordre = 5,
+                            TailleMaxMo = 5,
+                            TypeClient = "Association"
                         });
+                });
+
+            modelBuilder.Entity("Backend.DAL.Entities.EtapeValidation", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("IdEtape");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Commentaire")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)")
+                        .HasColumnName("Commentaire");
+
+                    b.Property<DateTime?>("DecisionDate")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("DecisionDate");
+
+                    b.Property<int>("IdWorkflow")
+                        .HasColumnType("int")
+                        .HasColumnName("IdWorkflow");
+
+                    b.Property<string>("Libelle")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("Libelle");
+
+                    b.Property<string>("NomUser")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("NomUser");
+
+                    b.Property<int>("Ordre")
+                        .HasColumnType("int")
+                        .HasColumnName("Ordre");
+
+                    b.Property<string>("RoleRequis")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)")
+                        .HasColumnName("RoleRequis");
+
+                    b.Property<string>("Statut")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("Statut");
+
+                    b.Property<int?>("UserId")
+                        .HasColumnType("int")
+                        .HasColumnName("UserId");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("IdWorkflow", "Ordre");
+
+                    b.ToTable("EtapeValidation", "dbo");
+                });
+
+            modelBuilder.Entity("Backend.DAL.Entities.EvenementClient", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("IdEvenement");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("DateEvenement")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("DateEvenement");
+
+                    b.Property<string>("DonneesJson")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("DonneesJson");
+
+                    b.Property<int>("IdClient")
+                        .HasColumnType("int")
+                        .HasColumnName("IdClient");
+
+                    b.Property<int?>("IdLien")
+                        .HasColumnType("int")
+                        .HasColumnName("IdLien");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("Message");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)")
+                        .HasColumnName("Type");
+
+                    b.Property<string>("TypeLien")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)")
+                        .HasColumnName("TypeLien");
+
+                    b.Property<int?>("UtilisateurId")
+                        .HasColumnType("int")
+                        .HasColumnName("UtilisateurId");
+
+                    b.Property<string>("UtilisateurNom")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("UtilisateurNom");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Type");
+
+                    b.HasIndex("UtilisateurId");
+
+                    b.HasIndex("IdClient", "DateEvenement");
+
+                    b.ToTable("EvenementClient", "dbo");
                 });
 
             modelBuilder.Entity("Backend.DAL.Entities.HistoriqueModification", b =>
@@ -664,6 +1205,166 @@ namespace Backend.DAL.Migrations
                     b.ToTable("HistoriqueModifications", "dbo");
                 });
 
+            modelBuilder.Entity("Backend.DAL.Entities.MessagePrive", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("IdMessage");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Contenu")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)")
+                        .HasColumnName("Contenu");
+
+                    b.Property<DateTime>("DateEnvoi")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("DateEnvoi");
+
+                    b.Property<DateTime?>("DateLecture")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("DateLecture");
+
+                    b.Property<int>("DestinataireUserId")
+                        .HasColumnType("int")
+                        .HasColumnName("DestinataireUserId");
+
+                    b.Property<int>("ExpediteurUserId")
+                        .HasColumnType("int")
+                        .HasColumnName("ExpediteurUserId");
+
+                    b.Property<bool>("Lu")
+                        .HasColumnType("bit")
+                        .HasColumnName("Lu");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DestinataireUserId");
+
+                    b.HasIndex("ExpediteurUserId", "DestinataireUserId", "DateEnvoi");
+
+                    b.ToTable("MessagesPrives", "dbo");
+                });
+
+            modelBuilder.Entity("Backend.DAL.Entities.Mouvement", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("IdMouvement");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Agence")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)")
+                        .HasColumnName("Agence");
+
+                    b.Property<DateTime>("DateMvt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("DateMvt");
+
+                    b.Property<string>("DevMVT")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("nvarchar(3)")
+                        .HasColumnName("DevMVT");
+
+                    b.Property<decimal>("Montant")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("Montant");
+
+                    b.Property<string>("NumCompte")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("NumCompte");
+
+                    b.Property<string>("Sens")
+                        .IsRequired()
+                        .HasMaxLength(1)
+                        .HasColumnType("nvarchar(1)")
+                        .HasColumnName("Sens");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("MVT", "dbo");
+                });
+
+            modelBuilder.Entity("Backend.DAL.Entities.NoteClient", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("IdNote");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Categorie")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("Categorie");
+
+                    b.Property<string>("Contenu")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)")
+                        .HasColumnName("Contenu");
+
+                    b.Property<string>("CreeParNom")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("CreeParNom");
+
+                    b.Property<int>("CreeParUserId")
+                        .HasColumnType("int")
+                        .HasColumnName("CreeParUserId");
+
+                    b.Property<DateTime>("DateCreation")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("DateCreation");
+
+                    b.Property<DateTime?>("DateMaj")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("DateMaj");
+
+                    b.Property<bool>("EstEpinglee")
+                        .HasColumnType("bit")
+                        .HasColumnName("EstEpinglee");
+
+                    b.Property<int>("IdClient")
+                        .HasColumnType("int")
+                        .HasColumnName("IdClient");
+
+                    b.Property<string>("ModifieParNom")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("ModifieParNom");
+
+                    b.Property<int?>("ModifieParUserId")
+                        .HasColumnType("int")
+                        .HasColumnName("ModifieParUserId");
+
+                    b.Property<string>("Titre")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)")
+                        .HasColumnName("Titre");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreeParUserId");
+
+                    b.HasIndex("IdClient", "DateCreation");
+
+                    b.ToTable("NoteClient", "dbo");
+                });
+
             modelBuilder.Entity("Backend.DAL.Entities.Notification", b =>
                 {
                     b.Property<int>("Id")
@@ -712,6 +1413,212 @@ namespace Backend.DAL.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("Notifications", "dbo");
+                });
+
+            modelBuilder.Entity("Backend.DAL.Entities.RegleAntifraude", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("IdRegle");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("Actif")
+                        .HasColumnType("bit")
+                        .HasColumnName("Actif");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("Code");
+
+                    b.Property<DateTime>("DateCreation")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("DateCreation");
+
+                    b.Property<DateTime?>("DateMaj")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("DateMaj");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)")
+                        .HasColumnName("Description");
+
+                    b.Property<string>("Nom")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)")
+                        .HasColumnName("Nom");
+
+                    b.Property<int>("PeriodeJours")
+                        .HasColumnType("int")
+                        .HasColumnName("PeriodeJours");
+
+                    b.Property<int>("Poids")
+                        .HasColumnType("int")
+                        .HasColumnName("Poids");
+
+                    b.Property<int>("Priorite")
+                        .HasColumnType("int")
+                        .HasColumnName("Priorite");
+
+                    b.Property<decimal>("Seuil")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("Seuil");
+
+                    b.Property<decimal?>("SeuilSecondaire")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)")
+                        .HasColumnName("SeuilSecondaire");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("Type");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("RegleAntifraude", "dbo");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Actif = true,
+                            Code = "MONTANT_MAXIMAL",
+                            DateCreation = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Alerte si un mouvement dépasse le montant absolu configuré (en dinars).",
+                            Nom = "Mouvement d'un montant élevé",
+                            PeriodeJours = 30,
+                            Poids = 30,
+                            Priorite = 1,
+                            Seuil = 50000m,
+                            Type = "MontantMaximal"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Actif = true,
+                            Code = "MONTANT_ANORMAL",
+                            DateCreation = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Alerte si un mouvement dépasse le multiplicateur du montant moyen du client.",
+                            Nom = "Montant anormal vs historique",
+                            PeriodeJours = 90,
+                            Poids = 35,
+                            Priorite = 2,
+                            Seuil = 5m,
+                            Type = "MontantAnormal"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Actif = true,
+                            Code = "PIC_DEBIT",
+                            DateCreation = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Alerte si le total débité sur une journée dépasse le multiplicateur de la moyenne journalière.",
+                            Nom = "Pic de débits",
+                            PeriodeJours = 30,
+                            Poids = 25,
+                            Priorite = 3,
+                            Seuil = 4m,
+                            Type = "PicDebit"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            Actif = true,
+                            Code = "MULTI_COMPTES",
+                            DateCreation = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Alerte si le client détient plus de comptes que le seuil configuré.",
+                            Nom = "Multiplication des comptes",
+                            PeriodeJours = 0,
+                            Poids = 15,
+                            Priorite = 4,
+                            Seuil = 3m,
+                            Type = "MultiComptes"
+                        },
+                        new
+                        {
+                            Id = 5,
+                            Actif = true,
+                            Code = "FREQUENCE",
+                            DateCreation = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Alerte si le nombre de mouvements dépasse le seuil sur la période.",
+                            Nom = "Fréquence anormale de mouvements",
+                            PeriodeJours = 30,
+                            Poids = 15,
+                            Priorite = 5,
+                            Seuil = 200m,
+                            Type = "Frequence"
+                        },
+                        new
+                        {
+                            Id = 6,
+                            Actif = true,
+                            Code = "DECOUPAGE_ANORMAL",
+                            DateCreation = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Alerte si plusieurs mouvements juste sous le seuil de déclaration se répètent sur le même compte (smurfing).",
+                            Nom = "Structuration (découpage de fonds)",
+                            PeriodeJours = 14,
+                            Poids = 35,
+                            Priorite = 6,
+                            Seuil = 10000m,
+                            SeuilSecondaire = 7m,
+                            Type = "DecoupageAnormal"
+                        },
+                        new
+                        {
+                            Id = 7,
+                            Actif = true,
+                            Code = "RAPID_IN_OUT",
+                            DateCreation = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Alerte si un crédit est suivi d'un débit équivalent dans une fenêtre courte.",
+                            Nom = "Passage de fonds (aller-retour)",
+                            PeriodeJours = 15,
+                            Poids = 30,
+                            Priorite = 7,
+                            Seuil = 5000m,
+                            SeuilSecondaire = 2m,
+                            Type = "RapidInOut"
+                        },
+                        new
+                        {
+                            Id = 8,
+                            Actif = true,
+                            Code = "COMPTE_REACTIVE",
+                            DateCreation = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Alerte si un compte inactif depuis longtemps reçoit soudainement un crédit important.",
+                            Nom = "Compte dormant réactivé",
+                            PeriodeJours = 200,
+                            Poids = 30,
+                            Priorite = 8,
+                            Seuil = 180m,
+                            SeuilSecondaire = 50000m,
+                            Type = "CompteReactive"
+                        },
+                        new
+                        {
+                            Id = 9,
+                            Actif = true,
+                            Code = "ACTIVITE_NOCTURNE",
+                            DateCreation = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Description = "Alerte si de nombreux mouvements ont lieu la nuit ou le week-end.",
+                            Nom = "Activité hors horaires bancaires",
+                            PeriodeJours = 30,
+                            Poids = 20,
+                            Priorite = 9,
+                            Seuil = 5m,
+                            SeuilSecondaire = 500m,
+                            Type = "ActiviteNocturne"
+                        });
                 });
 
             modelBuilder.Entity("Backend.DAL.Entities.Reminder", b =>
@@ -833,6 +1740,50 @@ namespace Backend.DAL.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Backend.DAL.Entities.ScoreRisque", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("IdScore");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ComposantsJson")
+                        .HasColumnType("nvarchar(max)")
+                        .HasColumnName("ComposantsJson");
+
+                    b.Property<DateTime>("DateCalcul")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("DateCalcul");
+
+                    b.Property<int>("IdClient")
+                        .HasColumnType("int")
+                        .HasColumnName("IdClient");
+
+                    b.Property<string>("Niveau")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("Niveau");
+
+                    b.Property<int>("Score")
+                        .HasColumnType("int")
+                        .HasColumnName("Score");
+
+                    b.Property<string>("Synthese")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)")
+                        .HasColumnName("Synthese");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdClient", "DateCalcul");
+
+                    b.ToTable("ScoreRisque", "dbo");
+                });
+
             modelBuilder.Entity("Backend.DAL.Entities.SearchHistory", b =>
                 {
                     b.Property<int>("Id")
@@ -879,6 +1830,90 @@ namespace Backend.DAL.Migrations
                     b.HasIndex("UserId", "SearchDate");
 
                     b.ToTable("SearchHistory", "dbo");
+                });
+
+            modelBuilder.Entity("Backend.DAL.Entities.SynchronisationLog", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("DateDebut")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DateFin")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Declencheur")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<long>("DureeMs")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("MessageErreur")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("NbInsert")
+                        .HasColumnType("int");
+
+                    b.Property<int>("NbRejet")
+                        .HasColumnType("int");
+
+                    b.Property<int>("NbUpdate")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Statut")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int?>("UtilisateurId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DateDebut");
+
+                    b.ToTable("SynchronisationLog");
+                });
+
+            modelBuilder.Entity("Backend.DAL.Entities.SynchronisationRejet", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ContenuBrut")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Fichier")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("IdSynchronisation")
+                        .HasColumnType("int")
+                        .HasColumnName("IdSynchronisation");
+
+                    b.Property<string>("Motif")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("NumeroLigne")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdSynchronisation");
+
+                    b.ToTable("SynchronisationRejet");
                 });
 
             modelBuilder.Entity("Backend.DAL.Entities.User", b =>
@@ -983,6 +2018,83 @@ namespace Backend.DAL.Migrations
                     b.ToTable("AppReg_UserRoles", "dbo");
                 });
 
+            modelBuilder.Entity("Backend.DAL.Entities.WorkflowValidation", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("IdWorkflow");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("CreatedByUserId")
+                        .HasColumnType("int")
+                        .HasColumnName("CreatedByUserId");
+
+                    b.Property<DateTime>("DateCreation")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("DateCreation");
+
+                    b.Property<DateTime>("DateMaj")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("DateMaj");
+
+                    b.Property<string>("EtapeCourante")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)")
+                        .HasColumnName("EtapeCourante");
+
+                    b.Property<int>("IdDocument")
+                        .HasColumnType("int")
+                        .HasColumnName("IdDocument");
+
+                    b.Property<string>("MotifRejet")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)")
+                        .HasColumnName("MotifRejet");
+
+                    b.Property<string>("StatutGlobal")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("StatutGlobal");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("EtapeCourante");
+
+                    b.HasIndex("IdDocument", "StatutGlobal");
+
+                    b.ToTable("WorkflowValidation", "dbo");
+                });
+
+            modelBuilder.Entity("Backend.DAL.Entities.AlertesFraude", b =>
+                {
+                    b.HasOne("Backend.DAL.Entities.Client", "Client")
+                        .WithMany()
+                        .HasForeignKey("IdClient")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Backend.DAL.Entities.RegleAntifraude", "Regle")
+                        .WithMany()
+                        .HasForeignKey("IdRegle")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Backend.DAL.Entities.User", "TraiteePar")
+                        .WithMany()
+                        .HasForeignKey("TraiteeParUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Client");
+
+                    b.Navigation("Regle");
+
+                    b.Navigation("TraiteePar");
+                });
+
             modelBuilder.Entity("Backend.DAL.Entities.ClientPortalToken", b =>
                 {
                     b.HasOne("Backend.DAL.Entities.Client", "Client")
@@ -1011,6 +2123,17 @@ namespace Backend.DAL.Migrations
                     b.Navigation("Client");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Backend.DAL.Entities.ContactClient", b =>
+                {
+                    b.HasOne("Backend.DAL.Entities.Client", "Client")
+                        .WithMany()
+                        .HasForeignKey("IdClient")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Client");
                 });
 
             modelBuilder.Entity("Backend.DAL.Entities.DetailClient", b =>
@@ -1060,6 +2183,80 @@ namespace Backend.DAL.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("Backend.DAL.Entities.EtapeValidation", b =>
+                {
+                    b.HasOne("Backend.DAL.Entities.WorkflowValidation", "Workflow")
+                        .WithMany("Etapes")
+                        .HasForeignKey("IdWorkflow")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Backend.DAL.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("User");
+
+                    b.Navigation("Workflow");
+                });
+
+            modelBuilder.Entity("Backend.DAL.Entities.EvenementClient", b =>
+                {
+                    b.HasOne("Backend.DAL.Entities.Client", "Client")
+                        .WithMany()
+                        .HasForeignKey("IdClient")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Backend.DAL.Entities.User", "Utilisateur")
+                        .WithMany()
+                        .HasForeignKey("UtilisateurId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Client");
+
+                    b.Navigation("Utilisateur");
+                });
+
+            modelBuilder.Entity("Backend.DAL.Entities.MessagePrive", b =>
+                {
+                    b.HasOne("Backend.DAL.Entities.User", "Destinataire")
+                        .WithMany()
+                        .HasForeignKey("DestinataireUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Backend.DAL.Entities.User", "Expediteur")
+                        .WithMany()
+                        .HasForeignKey("ExpediteurUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Destinataire");
+
+                    b.Navigation("Expediteur");
+                });
+
+            modelBuilder.Entity("Backend.DAL.Entities.NoteClient", b =>
+                {
+                    b.HasOne("Backend.DAL.Entities.User", "CreePar")
+                        .WithMany()
+                        .HasForeignKey("CreeParUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Backend.DAL.Entities.Client", "Client")
+                        .WithMany()
+                        .HasForeignKey("IdClient")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Client");
+
+                    b.Navigation("CreePar");
+                });
+
             modelBuilder.Entity("Backend.DAL.Entities.Notification", b =>
                 {
                     b.HasOne("Backend.DAL.Entities.User", "User")
@@ -1096,6 +2293,17 @@ namespace Backend.DAL.Migrations
                     b.Navigation("CreatedByUser");
                 });
 
+            modelBuilder.Entity("Backend.DAL.Entities.ScoreRisque", b =>
+                {
+                    b.HasOne("Backend.DAL.Entities.Client", "Client")
+                        .WithMany()
+                        .HasForeignKey("IdClient")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Client");
+                });
+
             modelBuilder.Entity("Backend.DAL.Entities.SearchHistory", b =>
                 {
                     b.HasOne("Backend.DAL.Entities.User", "User")
@@ -1105,6 +2313,17 @@ namespace Backend.DAL.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Backend.DAL.Entities.SynchronisationRejet", b =>
+                {
+                    b.HasOne("Backend.DAL.Entities.SynchronisationLog", "Synchronisation")
+                        .WithMany()
+                        .HasForeignKey("IdSynchronisation")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Synchronisation");
                 });
 
             modelBuilder.Entity("Backend.DAL.Entities.UserRole", b =>
@@ -1126,6 +2345,24 @@ namespace Backend.DAL.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("Backend.DAL.Entities.WorkflowValidation", b =>
+                {
+                    b.HasOne("Backend.DAL.Entities.User", "CreatedBy")
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Backend.DAL.Entities.DocumentClient", "Document")
+                        .WithMany()
+                        .HasForeignKey("IdDocument")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CreatedBy");
+
+                    b.Navigation("Document");
+                });
+
             modelBuilder.Entity("Backend.DAL.Entities.Client", b =>
                 {
                     b.Navigation("Detail");
@@ -1139,6 +2376,11 @@ namespace Backend.DAL.Migrations
             modelBuilder.Entity("Backend.DAL.Entities.User", b =>
                 {
                     b.Navigation("UserRoles");
+                });
+
+            modelBuilder.Entity("Backend.DAL.Entities.WorkflowValidation", b =>
+                {
+                    b.Navigation("Etapes");
                 });
 #pragma warning restore 612, 618
         }

@@ -14,6 +14,9 @@ namespace Backend.DTO.Dashboard
         /// Répartition géographique
         public List<GeographicDistributionDto> GeographicDistribution { get; set; } = new();
 
+        /// Répartition des clients par type
+        public List<ClientTypeDistributionDto> TypeDistribution { get; set; } = new();
+
         /// Top revenus mensuels
         public List<TopRevenueClientDto> TopRevenueClients { get; set; } = new();
 
@@ -110,6 +113,21 @@ namespace Backend.DTO.Dashboard
     }
 
     /// <summary>
+    /// Répartition des clients par type
+    /// </summary>
+    public class ClientTypeDistributionDto
+    {
+        /// Type de client (Particulier, Entreprise, VIP, Professionnel, Association)
+        public string Type { get; set; } = string.Empty;
+
+        /// Nombre de clients de ce type
+        public int Count { get; set; }
+
+        /// Pourcentage du total
+        public double Percentage { get; set; }
+    }
+
+    /// <summary>
     /// Top clients par revenu mensuel
     /// </summary>
     public class TopRevenueClientDto
@@ -178,11 +196,17 @@ namespace Backend.DTO.Dashboard
         /// Documents traités ce mois
         public int DocumentsProcessedThisMonth { get; set; }
 
-        /// Score de performance (0-100)
-        public double PerformanceScore { get; set; }
+        /// Nombre total de documents traités
+        public int DocumentsProcessedTotal { get; set; }
 
         /// Nombre de modifications effectuées
         public int ModificationsCount { get; set; }
+
+        /// Dernière activité de l'agent
+        public DateTime? LastActivity { get; set; }
+
+        /// Score de performance (0-100)
+        public double PerformanceScore { get; set; }
     }
 
     /// <summary>

@@ -13,6 +13,11 @@ namespace Backend.BL.IBL
         Task<DashboardStatsDto> GetDashboardStatsAsync();
 
         /// <summary>
+        /// Récupère les agrégats financiers (Comptes, MVT, Cours) pour le tableau de bord bancaire.
+        /// </summary>
+        Task<FinanceDashboardDto> GetFinanceDashboardAsync();
+
+        /// <summary>
         /// Récupère les KPIs principaux
         /// </summary>
         Task<KpiSummaryDto> GetKpisAsync();
