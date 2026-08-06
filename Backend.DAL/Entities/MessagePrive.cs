@@ -21,6 +21,18 @@ namespace Backend.DAL.Entities
         [MaxLength(4000)]
         public string Contenu { get; set; } = string.Empty;
 
+        [Column("PieceJointeUrl")]
+        [MaxLength(500)]
+        public string? PieceJointeUrl { get; set; }
+
+        [Column("PieceJointeNom")]
+        [MaxLength(255)]
+        public string? PieceJointeNom { get; set; }
+
+        [Column("PieceJointeType")]
+        [MaxLength(50)]
+        public string? PieceJointeType { get; set; }
+
         [Column("DateEnvoi")]
         public DateTime DateEnvoi { get; set; } = DateTime.UtcNow;
 

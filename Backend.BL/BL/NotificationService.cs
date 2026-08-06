@@ -12,12 +12,14 @@ namespace Backend.BL.BL
         private readonly INotificationRepository _repository;
         private readonly IMapper _mapper;
         private readonly ILogger<NotificationService> _logger;
+        private readonly IPortalNotifier _portalNotifier;
 
-        public NotificationService(INotificationRepository repository, IMapper mapper, ILogger<NotificationService> logger)
+        public NotificationService(INotificationRepository repository, IMapper mapper, ILogger<NotificationService> logger, IPortalNotifier portalNotifier)
         {
             _repository = repository;
             _mapper = mapper;
             _logger = logger;
+            _portalNotifier = portalNotifier;
         }
 
         public async Task<List<NotificationDto>> GetByUserIdAsync(int userId, int page = 1, int pageSize = 20)
@@ -45,7 +47,11 @@ namespace Backend.BL.BL
             await _repository.AddAsync(notification);
             await _repository.SaveChangesAsync();
             _logger.LogInformation("Notification créée pour l'utilisateur {UserId}: {Titre}", dto.UserId, dto.Titre);
-            return _mapper.Map<NotificationDto>(notification);
+
+            // Diffusion temps réel (SignalR) de la notification complète au destinataire.
+            var notifDto = _mapper.Map<NotificationDto>(notification);
+            await _portalNotifier.NotifyNotificationAsync(notifDto);
+            return notifDto;
         }
 
         public async Task<bool> MarkAsLuAsync(int id, int userId)

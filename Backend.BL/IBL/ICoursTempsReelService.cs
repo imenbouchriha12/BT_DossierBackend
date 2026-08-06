@@ -9,5 +9,9 @@ namespace Backend.BL.IBL
     public interface ICoursTempsReelService
     {
         Task<List<CoursTempsReelDto>> GetCoursDuJourAsync();
+
+        /// Récupère les derniers cours depuis la source externe (sans cache),
+        /// persiste l'historique en base si la valeur a changé et met à jour le cache.
+        Task<List<CoursTempsReelDto>> RefreshAsync();
     }
 }

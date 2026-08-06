@@ -6,6 +6,9 @@ namespace Backend.BL.BL
     /// La clé est l'identifiant utilisateur, la valeur le nombre de connexions simultanées.
     public static class PresenceUtilisateurs
     {
+        /// Groupe SignalR où chaque utilisateur connecté reçoit les changements de présence de tous.
+        public const string GroupePresence = "presence";
+
         private static readonly ConcurrentDictionary<int, int> _connexions = new();
 
         public static void Connecter(int userId)

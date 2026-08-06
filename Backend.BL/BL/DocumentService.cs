@@ -218,7 +218,7 @@ namespace Backend.BL.BL
                     Titre = $"Document {statut}",
                     Message = $"Le document {doc.TypeDocument} a été {statut}.",
                     Type = statut == "Validé" ? "Succès" : "Erreur",
-                    Lien = $"/detail-client/{doc.IdClient}"
+                    Lien = $"/client/{doc.IdClient}"
                 });
             }
 

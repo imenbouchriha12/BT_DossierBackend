@@ -1240,6 +1240,21 @@ namespace Backend.DAL.Migrations
                         .HasColumnType("bit")
                         .HasColumnName("Lu");
 
+                    b.Property<string>("PieceJointeNom")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)")
+                        .HasColumnName("PieceJointeNom");
+
+                    b.Property<string>("PieceJointeType")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("PieceJointeType");
+
+                    b.Property<string>("PieceJointeUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("PieceJointeUrl");
+
                     b.HasKey("Id");
 
                     b.HasIndex("DestinataireUserId");

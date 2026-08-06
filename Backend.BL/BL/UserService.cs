@@ -104,7 +104,7 @@ namespace Backend.BL.BL
                 Titre = "Compte activé",
                 Message = $"Votre compte a été activé avec le rôle {role.Name}. Votre matricule est {user.Matricule}.",
                 Type = "Succès",
-                Lien = "/gestion-utilisateurs"
+                Lien = "/tableau-de-bord"
             });
         }
 
@@ -143,7 +143,7 @@ namespace Backend.BL.BL
                 Titre = "Compte activé",
                 Message = "Votre compte a été activé.",
                 Type = "Succès",
-                Lien = "/gestion-utilisateurs"
+                Lien = "/tableau-de-bord"
             });
         }
 
@@ -165,7 +165,7 @@ namespace Backend.BL.BL
                 Titre = "Compte désactivé",
                 Message = "Votre compte a été désactivé.",
                 Type = "Erreur",
-                Lien = "/gestion-utilisateurs"
+                Lien = "/tableau-de-bord"
             });
         }
 

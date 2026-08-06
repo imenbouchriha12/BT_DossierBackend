@@ -1,4 +1,5 @@
 using Backend.BL.IBL;
+using Backend.DAL.Entities;
 using Backend.DAL.IDAL;
 using Backend.DTO.Finance;
 using Microsoft.Extensions.Configuration;
@@ -85,6 +86,84 @@ namespace Backend.BL.BL
             }
 
             return cours;
+        }
+
+        /// <summary>
+        /// Récupère les cours frais (sans cache), persiste l'historique en base si la
+        /// valeur a changé, et met à jour le cache mémoire. Utilisé par le service
+        /// d'arrière-plan pour diffuser les mises à jour en temps réel.
+        /// </summary>
+        public async Task<List<CoursTempsReelDto>> RefreshAsync()
+        {
+            var cours = await FetchTempsReelAsync()
+                ?? await FetchRepliSissAsync();
+
+            if (cours is null || cours.Count == 0)
+                return _cache ?? new List<CoursTempsReelDto>();
+
+            lock (_cacheLock)
+            {
+                _cache = cours;
+                _cacheDate = DateTime.UtcNow;
+            }
+
+            await PersistHistoriqueAsync(cours);
+            return cours;
+        }
+
+        private async Task PersistHistoriqueAsync(List<CoursTempsReelDto> cours)
+        {
+            try
+            {
+                var derniers = await _coursRepository.GetLatestAsync(null);
+                var derniersParDevise = derniers
+                    .Where(c => !string.IsNullOrWhiteSpace(c.Devise))
+                    .ToDictionary(c => c.Devise.Trim(), c => c.Valeur);
+
+                var maintenant = DateTime.UtcNow;
+                var journee = maintenant.Date;
+                var nouvelleValeur = false;
+
+                foreach (var c in cours)
+                {
+                    if (c.Devise == "TND") continue;
+
+                    var aChange = !derniersParDevise.TryGetValue(c.Devise, out var ancien)
+                                  || Math.Abs(c.Valeur - ancien) >= 0.0001m;
+
+                    if (!aChange) continue;
+
+                    // Une ligne existe déjà pour cette devise aujourd'hui (contrainte
+                    // unique Journee + Devise) : on met à jour au lieu d'insérer.
+                    var existant = await _coursRepository.GetByJourneeDeviseAsync(journee, c.Devise);
+                    if (existant is not null)
+                    {
+                        existant.Valeur = c.Valeur;
+                    }
+                    else
+                    {
+                        await _coursRepository.AddAsync(new Cours
+                        {
+                            Journee = maintenant,
+                            Devise = c.Devise,
+                            Valeur = c.Valeur,
+                            Multiplicateur = 1
+                        });
+                    }
+                    nouvelleValeur = true;
+                }
+
+                if (nouvelleValeur)
+                {
+                    await _coursRepository.SaveChangesAsync();
+                    _logger.LogInformation("Historique des cours mis à jour : {Count} devise(s) à {Heure:HH:mm:ss}",
+                        cours.Count(c => c.Devise != "TND"), maintenant);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Échec de la persistance de l'historique des cours.");
+            }
         }
 
         private async Task<List<CoursTempsReelDto>?> FetchTempsReelAsync()

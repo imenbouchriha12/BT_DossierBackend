@@ -17,7 +17,6 @@ namespace Backend.BL.BL
         private readonly IUserRepository             _userRepo;
         private readonly INotificationService        _notificationService;
         private readonly IEmailService               _emailService;
-        private readonly IPortalNotifier             _portalNotifier;
         private readonly IWorkflowService            _workflowService;
         private readonly IConfiguration              _configuration;
         private readonly ILogger<ClientPortalService> _logger;
@@ -31,7 +30,6 @@ namespace Backend.BL.BL
             IUserRepository             userRepo,
             INotificationService        notificationService,
             IEmailService               emailService,
-            IPortalNotifier             portalNotifier,
             IWorkflowService            workflowService,
             IConfiguration              configuration,
             ILogger<ClientPortalService> logger,
@@ -44,7 +42,6 @@ namespace Backend.BL.BL
             _userRepo            = userRepo;
             _notificationService = notificationService;
             _emailService        = emailService;
-            _portalNotifier      = portalNotifier;
             _workflowService     = workflowService;
             _configuration       = configuration;
             _logger              = logger;
@@ -419,16 +416,8 @@ namespace Backend.BL.BL
                         Message = $"Le client {client.CodeClient} ({client.Prenom} {client.Nom}) " +
                                   $"a soumis le document « {typeDocument} » via le portail self-service.",
                         Type    = "Info",
-                        Lien    = $"/detail-client/{client.Id}"
+                        Lien    = $"/client/{client.Id}"
                     });
-
-                    // SignalR push temps réel
-                    await _portalNotifier.NotifyUserAsync(
-                        admin.Id,
-                        "Nouveau document via portail client",
-                        $"{client.CodeClient} – {typeDocument}",
-                        "portal_upload",
-                        $"/detail-client/{client.Id}");
                 }
             }
             catch (Exception ex)

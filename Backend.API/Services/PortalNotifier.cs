@@ -1,5 +1,6 @@
 using Backend.API.Hubs;
 using Backend.BL.IBL;
+using Backend.DTO.Notification;
 using Microsoft.AspNetCore.SignalR;
 
 namespace Backend.API.Services
@@ -17,6 +18,20 @@ namespace Backend.API.Services
         {
             _hubContext = hubContext;
             _logger     = logger;
+        }
+
+        public async Task NotifyNotificationAsync(NotificationDto notif)
+        {
+            try
+            {
+                await _hubContext.Clients
+                    .Group($"user_{notif.UserId}")
+                    .SendAsync("ReceiveNotification", notif);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Échec notification SignalR → user_{UserId}", notif.UserId);
+            }
         }
 
         public async Task NotifyUserAsync(int userId, string titre, string message, string type, string lien)

@@ -25,8 +25,9 @@ namespace Backend.API.Hubs
             if (userId.HasValue)
             {
                 await Groups.AddToGroupAsync(Context.ConnectionId, $"user_{userId.Value}");
+                await Groups.AddToGroupAsync(Context.ConnectionId, PresenceUtilisateurs.GroupePresence);
                 PresenceUtilisateurs.Connecter(userId.Value);
-                await NotifierPresence(userId.Value, enLigne: true);
+                await NotifierPresence(userId.Value);
                 _logger.LogInformation("Messagerie: utilisateur {UserId} connecté ({ConnectionId})", userId.Value, Context.ConnectionId);
             }
 
@@ -39,8 +40,9 @@ namespace Backend.API.Hubs
             if (userId.HasValue)
             {
                 await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"user_{userId.Value}");
+                await Groups.RemoveFromGroupAsync(Context.ConnectionId, PresenceUtilisateurs.GroupePresence);
                 PresenceUtilisateurs.Deconnecter(userId.Value);
-                await NotifierPresence(userId.Value, enLigne: false);
+                await NotifierPresence(userId.Value);
                 _logger.LogInformation("Messagerie: utilisateur {UserId} déconnecté ({ConnectionId})", userId.Value, Context.ConnectionId);
             }
 
@@ -59,9 +61,10 @@ namespace Backend.API.Hubs
             return int.TryParse(value, out var id) ? id : null;
         }
 
-        private async Task NotifierPresence(int userId, bool enLigne)
+        private async Task NotifierPresence(int userId)
         {
-            await Clients.Group($"user_{userId}").SendAsync("PresenceChanged", new { userId, enLigne });
+            var enLigne = PresenceUtilisateurs.EstEnLigne(userId);
+            await Clients.Group(PresenceUtilisateurs.GroupePresence).SendAsync("PresenceChanged", new { userId, enLigne });
         }
     }
 }

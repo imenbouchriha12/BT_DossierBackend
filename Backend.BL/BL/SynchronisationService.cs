@@ -291,7 +291,7 @@ namespace Backend.BL.BL
                         Titre   = "Synchronisation SISS terminée",
                         Message = message,
                         Type    = type,
-                        Lien    = "/synchronisation"
+                        Lien    = "/historique-modifications"
                     });
                 }
             }

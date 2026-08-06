@@ -417,6 +417,7 @@ namespace Backend.BL.BL
                 .Select(d => new PendingDocumentItemDto
                 {
                     DocumentId = d.Id,
+                    ClientId = d.Client?.Id ?? 0,
                     ClientCode = d.Client?.CodeClient ?? "",
                     ClientName = d.Client != null ? $"{d.Client.Nom} {d.Client.Prenom}" : "",
                     DocumentType = d.TypeDocument,

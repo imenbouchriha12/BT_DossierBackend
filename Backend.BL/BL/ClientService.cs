@@ -265,7 +265,7 @@ namespace Backend.BL.BL
                         Titre = "Statut client modifié",
                         Message = $"Le statut du client {client.CodeClient} ({client.Nom} {client.Prenom}) est passé à {client.Statut}.",
                         Type = notificationType,
-                        Lien = $"/detail-client/{id}"
+                        Lien = $"/client/{id}"
                     });
                 }
             }

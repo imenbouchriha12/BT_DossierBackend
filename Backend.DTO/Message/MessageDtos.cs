@@ -8,6 +8,9 @@ namespace Backend.DTO.Message
         public int DestinataireUserId { get; set; }
         public string? DestinataireNom { get; set; }
         public string Contenu { get; set; } = string.Empty;
+        public string? PieceJointeUrl { get; set; }
+        public string? PieceJointeNom { get; set; }
+        public string? PieceJointeType { get; set; }
         public DateTime DateEnvoi { get; set; }
         public bool Lu { get; set; }
         public DateTime? DateLecture { get; set; }
@@ -35,5 +38,15 @@ namespace Backend.DTO.Message
     {
         public int DestinataireUserId { get; set; }
         public string Contenu { get; set; } = string.Empty;
+        public string? PieceJointeUrl { get; set; }
+        public string? PieceJointeNom { get; set; }
+        public string? PieceJointeType { get; set; }
+    }
+
+    public class UploadPieceJointeDto
+    {
+        public string Url { get; set; } = string.Empty;
+        public string Nom { get; set; } = string.Empty;
+        public string Type { get; set; } = string.Empty;
     }
 }

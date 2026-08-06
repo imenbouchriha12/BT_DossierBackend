@@ -51,7 +51,7 @@ namespace Backend.BL.BL
                     AutreMatricule = partenaire.Matricule,
                     AutreRole = partenaire.UserRoles.FirstOrDefault()?.Role?.Name ?? string.Empty,
                     EnLigne = PresenceUtilisateurs.EstEnLigne(idPartenaire),
-                    DernierMessage = dernier?.Contenu,
+                    DernierMessage = ApercuDernierMessage(dernier),
                     DerniereDate = dernier?.DateEnvoi,
                     NonLu = nonLu
                 });
@@ -74,7 +74,10 @@ namespace Backend.BL.BL
 
         public async Task<MessageDto> SendAsync(int senderId, SendMessageDto dto)
         {
-            if (string.IsNullOrWhiteSpace(dto.Contenu))
+            var contenu = dto.Contenu?.Trim() ?? string.Empty;
+            var aPieceJointe = !string.IsNullOrWhiteSpace(dto.PieceJointeUrl);
+
+            if (string.IsNullOrWhiteSpace(contenu) && !aPieceJointe)
                 throw new ArgumentException("Le message ne peut pas être vide.");
             if (dto.DestinataireUserId <= 0 || dto.DestinataireUserId == senderId)
                 throw new ArgumentException("Destinataire invalide.");
@@ -83,7 +86,10 @@ namespace Backend.BL.BL
             {
                 ExpediteurUserId = senderId,
                 DestinataireUserId = dto.DestinataireUserId,
-                Contenu = dto.Contenu.Trim(),
+                Contenu = contenu,
+                PieceJointeUrl = string.IsNullOrWhiteSpace(dto.PieceJointeUrl) ? null : dto.PieceJointeUrl.Trim(),
+                PieceJointeNom = string.IsNullOrWhiteSpace(dto.PieceJointeNom) ? null : dto.PieceJointeNom.Trim(),
+                PieceJointeType = string.IsNullOrWhiteSpace(dto.PieceJointeType) ? null : dto.PieceJointeType.Trim(),
                 DateEnvoi = DateTime.UtcNow,
                 Lu = false
             };
@@ -107,6 +113,14 @@ namespace Backend.BL.BL
             return await _messageRepository.CountUnreadAsync(userId);
         }
 
+        private static string? ApercuDernierMessage(MessagePrive? m)
+        {
+            if (m == null) return null;
+            if (!string.IsNullOrWhiteSpace(m.Contenu)) return m.Contenu;
+            if (!string.IsNullOrWhiteSpace(m.PieceJointeNom)) return "📎 " + m.PieceJointeNom;
+            return "📎 Pièce jointe";
+        }
+
         private static MessageDto MapMessage(MessagePrive m) => new()
         {
             Id = m.Id,
@@ -115,6 +129,9 @@ namespace Backend.BL.BL
             DestinataireUserId = m.DestinataireUserId,
             DestinataireNom = m.Destinataire?.Username,
             Contenu = m.Contenu,
+            PieceJointeUrl = m.PieceJointeUrl,
+            PieceJointeNom = m.PieceJointeNom,
+            PieceJointeType = m.PieceJointeType,
             DateEnvoi = m.DateEnvoi,
             Lu = m.Lu,
             DateLecture = m.DateLecture

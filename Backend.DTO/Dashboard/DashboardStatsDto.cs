@@ -169,6 +169,7 @@ namespace Backend.DTO.Dashboard
     public class PendingDocumentItemDto
     {
         public int DocumentId { get; set; }
+        public int ClientId { get; set; }
         public string ClientCode { get; set; } = string.Empty;
         public string ClientName { get; set; } = string.Empty;
         public string DocumentType { get; set; } = string.Empty;

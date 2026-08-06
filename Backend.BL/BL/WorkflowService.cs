@@ -19,7 +19,6 @@ namespace Backend.BL.BL
         private readonly IWorkflowRepository _workflowRepository;
         private readonly IUserRepository _userRepository;
         private readonly INotificationService _notificationService;
-        private readonly IPortalNotifier _portalNotifier;
         private readonly IHistoriqueService _historiqueService;
         private readonly ICurrentUserService _currentUser;
         private readonly ClientStatusManager _statusManager;
@@ -31,7 +30,6 @@ namespace Backend.BL.BL
             IWorkflowRepository workflowRepository,
             IUserRepository userRepository,
             INotificationService notificationService,
-            IPortalNotifier portalNotifier,
             IHistoriqueService historiqueService,
             ICurrentUserService currentUser,
             ClientStatusManager statusManager,
@@ -42,7 +40,6 @@ namespace Backend.BL.BL
             _workflowRepository = workflowRepository;
             _userRepository = userRepository;
             _notificationService = notificationService;
-            _portalNotifier = portalNotifier;
             _historiqueService = historiqueService;
             _currentUser = currentUser;
             _statusManager = statusManager;
@@ -135,7 +132,7 @@ namespace Backend.BL.BL
                     workflow.EtapeCourante,
                     "Document à valider",
                     $"Le document « {document.TypeDocument} » ({document.NomFichier}) attend la validation {workflow.EtapeCourante}.",
-                    $"/detail-client/{document.IdClient}");
+                    $"/client/{document.IdClient}");
             }
 
             return _mapper.Map<WorkflowValidationDto>(workflow);
@@ -256,7 +253,7 @@ namespace Backend.BL.BL
                     prochaineStep.RoleRequis,
                     "Document à valider",
                     $"Le document « {document.TypeDocument} » ({document.NomFichier}) attend la validation {prochaineStep.RoleRequis}.",
-                    $"/detail-client/{document.IdClient}");
+                    $"/client/{document.IdClient}");
 
                 _logger.LogInformation("Workflow {Id} : étape {Etape} validée — prochaine : {Next}",
                     workflow.Id, stepCourante.Libelle, prochaineStep.RoleRequis);
@@ -407,7 +404,6 @@ namespace Backend.BL.BL
                         Type = "Info",
                         Lien = lien
                     });
-                    await _portalNotifier.NotifyUserAsync(user.Id, titre, message, "workflow", lien);
                 }
             }
             catch (Exception ex)
@@ -429,9 +425,8 @@ namespace Backend.BL.BL
                 Titre = titre,
                 Message = message,
                 Type = type,
-                Lien = $"/detail-client/{document.IdClient}"
+                Lien = $"/client/{document.IdClient}"
             });
-            await _portalNotifier.NotifyUserAsync(userId.Value, titre, message, "workflow", $"/detail-client/{document.IdClient}");
         }
 
         private async Task RecalculerStatutClientAsync(int idClient)

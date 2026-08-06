@@ -133,6 +133,9 @@ builder.Services.AddHostedService<ReminderOverdueService>();
 // ✅ Synchronisation automatique application ↔ SISS (planifiée)
 builder.Services.AddHostedService<SissSynchronisationHostedService>();
 
+// ✅ Actualisation automatique des cours de change en temps réel (+ diffusion SignalR)
+builder.Services.AddHostedService<CoursTempsReelHostedService>();
+
 // Un service en arrière-plan qui échoue ne doit JAMAIS arrêter l'API :
 // on ignore son exception pour que le host continue de fonctionner.
 builder.Services.Configure<HostOptions>(options =>
@@ -212,5 +215,6 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapHub<NotificationHub>("/hubs/notifications");
 app.MapHub<MessagesHub>("/hubs/messages");
+app.MapHub<CoursHub>("/hubs/cours");
 
 app.Run();
