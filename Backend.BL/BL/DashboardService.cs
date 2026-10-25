@@ -509,7 +509,7 @@ namespace Backend.BL.BL
                     Title = "Clients inactifs",
                     Message = $"{inactiveCount} client(s) sans activité depuis plus de 30 jours",
                     Count = inactiveCount,
-                    ActionUrl = "/clients?filter=inactive"
+                    ActionUrl = "/liste-clients"
                 });
             }
 
@@ -530,7 +530,7 @@ namespace Backend.BL.BL
                     Title = "Documents en attente",
                     Message = $"{pendingDocsCount} document(s) en attente de validation ({urgentDocs} urgent(s))",
                     Count = pendingDocsCount,
-                    ActionUrl = "/documents?filter=pending"
+                    ActionUrl = "/gestion-documents"
                 });
             }
 
@@ -547,7 +547,7 @@ namespace Backend.BL.BL
                     Title = "Clients bloqués",
                     Message = $"{blockedCount} client(s) actuellement bloqué(s)",
                     Count = blockedCount,
-                    ActionUrl = "/clients?filter=blocked"
+                    ActionUrl = "/liste-clients"
                 });
             }
 

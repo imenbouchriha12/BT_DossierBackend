@@ -92,7 +92,7 @@ namespace Backend.API.Controllers
         {
             try
             {
-                var workflow = await _workflowService.ValiderAsync(id, dto.Commentaire);
+                var workflow = await _workflowService.ValiderAsync(id, dto.Commentaire, dto.Derogation);
                 return Ok(workflow);
             }
             catch (KeyNotFoundException)
@@ -119,7 +119,7 @@ namespace Backend.API.Controllers
                 if (string.IsNullOrWhiteSpace(dto.Commentaire))
                     return BadRequest(new { message = "Le motif de rejet est obligatoire." });
 
-                var workflow = await _workflowService.RejeterAsync(id, dto.Commentaire);
+                var workflow = await _workflowService.RejeterAsync(id, dto.Commentaire, dto.Derogation);
                 return Ok(workflow);
             }
             catch (KeyNotFoundException)

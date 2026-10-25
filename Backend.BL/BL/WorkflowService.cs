@@ -192,7 +192,7 @@ namespace Backend.BL.BL
             };
         }
 
-        public async Task<WorkflowValidationDto> ValiderAsync(int workflowId, string? commentaire)
+        public async Task<WorkflowValidationDto> ValiderAsync(int workflowId, string? commentaire, bool derogation = false)
         {
             var workflow = await GetWorkflowOrThrowAsync(workflowId);
             if (workflow.StatutGlobal != "EnCours")
@@ -202,7 +202,14 @@ namespace Backend.BL.BL
             var stepCourante = workflow.Etapes.FirstOrDefault(s => s.Statut == "EnAttente")
                 ?? throw new InvalidOperationException("Aucune étape en attente de validation.");
 
-            await VerifierAutorisationStepAsync(stepCourante.RoleRequis);
+            var estDerogation = await VerifierAutorisationStepAsync(stepCourante.RoleRequis, derogation, commentaire);
+            var prefixe = estDerogation
+                ? $"Dérogation {_currentUser.UserName} sur l'étape {stepCourante.RoleRequis} — "
+                : string.Empty;
+
+            if (estDerogation)
+                _logger.LogWarning("Dérogation accordée par {User} sur l'étape {Role} du workflow {Id}.",
+                    _currentUser.UserName, stepCourante.RoleRequis, workflowId);
 
             stepCourante.Statut = "Valide";
             stepCourante.UserId = _currentUser.UserId;
@@ -218,9 +225,9 @@ namespace Backend.BL.BL
                 document.StatutValidation = "Validé";
 
                 await _historiqueService.EnregistrerAsync(
-                    "WorkflowValidation", workflowId, "Validation",
+                    "WorkflowValidation", workflowId, estDerogation ? "Dérogation" : "Validation",
                     $"Étape {stepCourante.Libelle}",
-                    $"Workflow validé — document « {document.TypeDocument} »",
+                    $"{prefixe}Workflow validé — document « {document.TypeDocument} »",
                     _currentUser.UserId, _currentUser.UserName);
 
                 await NotifierUploaderAsync(workflow, document, "Document validé",
@@ -244,9 +251,9 @@ namespace Backend.BL.BL
                 workflow.EtapeCourante = prochaineStep.RoleRequis;
 
                 await _historiqueService.EnregistrerAsync(
-                    "WorkflowValidation", workflowId, "Validation",
+                    "WorkflowValidation", workflowId, estDerogation ? "Dérogation" : "Validation",
                     $"Étape {stepCourante.Libelle}",
-                    $"Validée par {_currentUser.UserName} — prochaine étape : {prochaineStep.RoleRequis}",
+                    $"{prefixe}Validée par {_currentUser.UserName} — prochaine étape : {prochaineStep.RoleRequis}",
                     _currentUser.UserId, _currentUser.UserName);
 
                 await NotifyRoleAsync(
@@ -267,7 +274,7 @@ namespace Backend.BL.BL
             return _mapper.Map<WorkflowValidationDto>(workflow);
         }
 
-        public async Task<WorkflowValidationDto> RejeterAsync(int workflowId, string commentaire)
+        public async Task<WorkflowValidationDto> RejeterAsync(int workflowId, string commentaire, bool derogation = false)
         {
             if (string.IsNullOrWhiteSpace(commentaire))
                 throw new ArgumentException("Le motif de rejet est obligatoire.");
@@ -280,7 +287,14 @@ namespace Backend.BL.BL
             var stepCourante = workflow.Etapes.FirstOrDefault(s => s.Statut == "EnAttente")
                 ?? throw new InvalidOperationException("Aucune étape en attente de validation.");
 
-            await VerifierAutorisationStepAsync(stepCourante.RoleRequis);
+            var estDerogation = await VerifierAutorisationStepAsync(stepCourante.RoleRequis, derogation, commentaire);
+            var prefixe = estDerogation
+                ? $"Dérogation {_currentUser.UserName} sur l'étape {stepCourante.RoleRequis} — "
+                : string.Empty;
+
+            if (estDerogation)
+                _logger.LogWarning("Dérogation de rejet accordée par {User} sur l'étape {Role} du workflow {Id}.",
+                    _currentUser.UserName, stepCourante.RoleRequis, workflowId);
 
             stepCourante.Statut = "Rejete";
             stepCourante.UserId = _currentUser.UserId;
@@ -302,9 +316,9 @@ namespace Backend.BL.BL
             await _workflowRepository.SaveChangesAsync();
 
             await _historiqueService.EnregistrerAsync(
-                "WorkflowValidation", workflowId, "Rejet",
+                "WorkflowValidation", workflowId, estDerogation ? "Dérogation" : "Rejet",
                 $"Étape {stepCourante.Libelle}",
-                $"Rejeté par {_currentUser.UserName} — motif : {commentaire}",
+                $"{prefixe}Rejeté par {_currentUser.UserName} — motif : {commentaire}",
                 _currentUser.UserId, _currentUser.UserName);
 
             await NotifierUploaderAsync(workflow, document, "Document rejeté",
@@ -370,20 +384,30 @@ namespace Backend.BL.BL
             return user?.UserRoles.Select(ur => ur.Role.Name).Distinct().ToList() ?? new List<string>();
         }
 
-        private async Task<int> GetCurrentUserMaxRankAsync()
+        /// Seul le rôle assigné à l'étape peut décider. Un Superviseur ou un Admin peut déroger
+        /// explicitement, à condition de fournir un commentaire ; la dérogation est tracée.
+        private async Task<bool> VerifierAutorisationStepAsync(
+            string roleRequis, bool derogation, string? commentaire)
         {
             var roles = await GetCurrentUserRolesAsync();
-            return roles.Select(WorkflowRoles.Rang).DefaultIfEmpty(0).Max();
-        }
 
-        /// Un utilisateur peut valider une étape si son rang maximal est >= rang requis
-        private async Task VerifierAutorisationStepAsync(string roleRequis)
-        {
-            var userRank = await GetCurrentUserMaxRankAsync();
-            var stepRank = WorkflowRoles.Rang(roleRequis);
-            if (userRank < stepRank)
-                throw new UnauthorizedAccessException(
-                    $"Cette étape requiert le rôle « {roleRequis} » — vos droits sont insuffisants.");
+            if (roles.Contains(roleRequis, StringComparer.OrdinalIgnoreCase))
+                return false;
+
+            var peutDeroger = roles.Contains(WorkflowRoles.Superviseur, StringComparer.OrdinalIgnoreCase)
+                           || roles.Contains(WorkflowRoles.Admin, StringComparer.OrdinalIgnoreCase);
+
+            if (derogation && peutDeroger)
+            {
+                if (string.IsNullOrWhiteSpace(commentaire))
+                    throw new InvalidOperationException(
+                        "Un commentaire est obligatoire pour déroger à l'étape assignée.");
+
+                return true;
+            }
+
+            throw new UnauthorizedAccessException(
+                $"Cette étape requiert le rôle « {roleRequis} ». Un Superviseur ou un Admin peut débloquer le dossier avec une dérogation motivée.");
         }
 
         private async Task NotifyRoleAsync(string role, string titre, string message, string lien)

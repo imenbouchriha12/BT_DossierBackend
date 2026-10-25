@@ -27,11 +27,11 @@ namespace Backend.BL.IBL
 
         Task<WorkflowStatsDto> GetStatsAsync();
 
-        /// Valide l'étape courante du workflow (le rôle de l'utilisateur doit correspondre)
-        Task<WorkflowValidationDto> ValiderAsync(int workflowId, string? commentaire);
+        /// Valide l'étape courante du workflow (le rôle de l'utilisateur doit correspondre à l'étape)
+        Task<WorkflowValidationDto> ValiderAsync(int workflowId, string? commentaire, bool derogation = false);
 
         /// Rejette le workflow (motif obligatoire)
-        Task<WorkflowValidationDto> RejeterAsync(int workflowId, string commentaire);
+        Task<WorkflowValidationDto> RejeterAsync(int workflowId, string commentaire, bool derogation = false);
 
         /// Relance un workflow rejeté (nouvelle instance de workflow, historique conservé)
         Task<WorkflowValidationDto> RelancerAsync(int workflowId, string? commentaire);

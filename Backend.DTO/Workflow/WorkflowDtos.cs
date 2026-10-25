@@ -39,11 +39,17 @@ namespace Backend.DTO.Workflow
     public class ValidateWorkflowDto
     {
         public string? Commentaire { get; set; }
+
+        /// Dérogation explicite d'un Superviseur/Admin pour une étape qui ne lui est pas assignée.
+        public bool Derogation { get; set; }
     }
 
     public class RejectWorkflowDto
     {
         public string Commentaire { get; set; } = string.Empty;
+
+        /// Dérogation explicite d'un Superviseur/Admin pour une étape qui ne lui est pas assignée.
+        public bool Derogation { get; set; }
     }
 
     public class ResubmitWorkflowDto
